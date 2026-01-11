@@ -133,64 +133,91 @@ npm run build
 
 ---
 
-## Theo - Backend AI + Frontend Streaming
+## ~~Theo - Backend AI + Frontend Streaming~~ ✅ COMPLETE
 
 ### MISSION
-Implementer le pipeline AI de generation et l'UI de streaming/graph.
+~~Implementer le pipeline AI de generation et l'UI de streaming/graph.~~
+
+### TACHES COMPLETEES
+
+- ✅ **Tache 1: Agent AI** - `backend/src/ai/agent.ts`
+- ✅ **Tache 2: Prompts** - `backend/src/ai/prompts.ts`
+- ✅ **Tache 3: Web Search Tool** - `backend/src/ai/tools/search.tool.ts`
+- ✅ **Tache 4: Entity Tool** - `backend/src/ai/tools/entity.tool.ts`
+- ✅ **Tache 5: Route generate.ts** - `backend/src/routes/generate.ts`
+- ✅ **Tache 6: GenerationProgress** - `frontend/components/generation/GenerationProgress.tsx`
+- ✅ **Tache 7: GraphView** - `frontend/components/graph/GraphView.tsx`
+- ✅ **Tache 8: Page search** - `frontend/app/search/page.tsx`
+
+---
+
+## Kofu - Queue Workers + Wiki Display
+
+### MISSION
+Implementer les workers BullMQ pour le traitement async et la page wiki avec rendu markdown.
 
 ### TACHES A FAIRE (dans l'ordre)
 
-**Tache 1: Agent AI**
-- Fichier: `backend/src/ai/agent.ts`
-- Utiliser Vercel AI SDK
-- Fonction: generatePage(query) avec streaming
+**Tache 1: Queue Setup**
+- Fichier: `backend/src/queue/queues.ts`
+- Creer les queues: extract, link, enrich
+- Utiliser BullMQ + Redis
 
-**Tache 2: Prompts**
-- Fichier: `backend/src/ai/prompts.ts`
-- System prompts pour generation encyclopedie
+**Tache 2: Extract Worker**
+- Fichier: `backend/src/queue/workers/extractWorker.ts`
+- Traiter les jobs d'extraction d'entites apres generation
+- Utiliser: `import { extractEntities } from "../../ai/tools/entity.tool"`
 
-**Tache 3: Web Search Tool**
-- Fichier: `backend/src/ai/tools/search.tool.ts`
-- Integration Tavily ou Serper
+**Tache 3: Link Worker**
+- Fichier: `backend/src/queue/workers/linkWorker.ts`
+- Deduplication des entites
+- Creation des relations entre entites
 
-**Tache 4: Entity Tool**
-- Fichier: `backend/src/ai/tools/entity.tool.ts`
-- Extraction NER depuis contenu
+**Tache 4: Enrich Worker**
+- Fichier: `backend/src/queue/workers/enrichWorker.ts`
+- Creer les pages manquantes pour les entites importantes
+- Utiliser: `import { generatePage } from "../../ai/agent"`
 
-**Tache 5: Route generate.ts**
-- Fichier: `backend/src/routes/generate.ts`
-- SSE streaming complet avec etapes
+**Tache 5: Wiki Page Display**
+- Fichier: `frontend/app/wiki/[slug]/page.tsx`
+- Fetch page depuis API
+- Rendu markdown avec react-markdown
+- Afficher entites liees en sidebar
 
-**Tache 6: GenerationProgress**
-- Fichier: `frontend/components/generation/GenerationProgress.tsx`
-- Afficher etapes: search, analyze, generate, extract, save
-- Utiliser: `import { useSSE } from "@/hooks/useSSE"`
+**Tache 6: Markdown Component**
+- Fichier: `frontend/components/wiki/MarkdownContent.tsx`
+- Rendu markdown avec syntax highlighting
+- Convertir [[Entity]] en liens internes
 
-**Tache 7: GraphView**
-- Fichier: `frontend/components/graph/GraphView.tsx`
-- Utiliser react-force-graph
-- Afficher nodes et links
+**Tache 7: Entity Sidebar**
+- Fichier: `frontend/components/wiki/EntitySidebar.tsx`
+- Liste des entites de la page
+- Badges par type (PERSON, ORG, LOCATION...)
 
-**Tache 8: Page search**
-- Fichier: `frontend/app/search/page.tsx`
-- Integrer GenerationProgress
-- Redirect vers wiki/[slug] quand complete
+**Tache 8: Page Header**
+- Fichier: `frontend/components/wiki/PageHeader.tsx`
+- Titre, date de creation, nombre de vues
+- Bouton "Voir le graph"
 
 ### FICHIERS EXISTANTS A UTILISER
 ```
 backend/src/lib/prisma.ts
 backend/src/lib/redis.ts
-backend/src/types/index.ts
-frontend/lib/sse.ts           # createSSEConnection, createMockSSE
-frontend/hooks/useSSE.ts      # Hook pret a utiliser
+backend/src/ai/agent.ts           # generatePage()
+backend/src/ai/tools/entity.tool.ts
+frontend/lib/api.ts
 frontend/types/index.ts
 ```
 
 ### TESTS
 ```bash
-npx tsx tests/generate.test.ts
+npx tsx tests/queue.test.ts
 npm run typecheck
 ```
+
+### DOCS A LIRE
+- `docs/architecture/backend.md` (section Queue System)
+- `docs/features/entity-extraction.md`
 
 ---
 
