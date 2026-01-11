@@ -112,8 +112,8 @@ Page Elon Musk mentionne deja Tesla (auto-lie)
 
 ```bash
 # Clone
-git clone https://github.com/your-username/pedia.git
-cd pedia
+git clone https://github.com/sanztheo/PedIA.git
+cd PedIA
 
 # Frontend
 cd frontend
