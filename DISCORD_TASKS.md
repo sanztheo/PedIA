@@ -119,7 +119,7 @@ backend/
 
 ### Taches:
 - [ ] Pipeline de generation de page (SSE streaming)
-- [ ] Integration Claude via Vercel AI SDK
+- [ ] Integration AI via Vercel AI SDK (Gemini/OpenAI/Claude)
 - [ ] Extraction d'entites (NER)
 - [ ] Recherche web (Brave/Serper/Tavily)
 - [ ] Jobs BullMQ pour generation async
@@ -178,7 +178,7 @@ npm run dev
 | Frontend | Next.js 15, Tailwind, SWR, react-force-graph |
 | Backend | Hono, Prisma, BullMQ, Vercel AI SDK |
 | Database | PostgreSQL, Qdrant, Redis |
-| AI | Claude (Anthropic) |
+| AI | Gemini / OpenAI / Claude (au choix) |
 
 ---
 

@@ -100,7 +100,7 @@ Orchestration de la generation:
 1. Recherche web (Tavily)
 2. Extraction contenu (Jina)
 3. Verification sources
-4. Generation LLM (Claude)
+4. Generation LLM (Gemini/OpenAI/Claude via Vercel AI SDK)
 5. Extraction entites
 6. Sauvegarde
 

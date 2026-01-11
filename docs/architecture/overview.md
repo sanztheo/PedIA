@@ -40,7 +40,7 @@ PedIA est une encyclopedie auto-evolutive alimentee par l'IA. Chaque recherche e
 |  |   +-- /generate              -> Generation AI (SSE streaming)   |
 |  |   +-- /graph                 -> Relations entites               |
 |  +-- Services                                                       |
-|  |   +-- AIService              -> Vercel AI SDK (Claude/GPT)      |
+|  |   +-- AIService              -> Vercel AI SDK (multi-provider)  |
 |  |   +-- SearchService          -> Web scraping + verification     |
 |  |   +-- GraphService           -> Gestion liens entites           |
 |  |   +-- EntityService          -> Extraction + deduplication      |
@@ -57,7 +57,7 @@ PedIA est une encyclopedie auto-evolutive alimentee par l'IA. Chaque recherche e
 |  EXTERNAL SERVICES                                                 |
 |  +-- Tavily / Bright Data       -> Web search APIs                 |
 |  +-- Jina AI / Firecrawl        -> Web scraping                    |
-|  +-- Claude / GPT               -> Generation contenu              |
+|  +-- Gemini / OpenAI / Claude   -> Generation contenu              |
 |                                                                    |
 |  DEPLOY                                                            |
 |  +-- Frontend -> Vercel                                            |
@@ -93,7 +93,7 @@ User cherche "Tesla"
        v
 +------------------+
 | 4. AI Generate   | --> Stream SSE vers frontend
-|    (Claude/GPT)  | --> Affiche steps en temps reel
+|    (LLM)         | --> Affiche steps en temps reel
 +------------------+
        |
        v
@@ -137,7 +137,7 @@ User cherche "Tesla"
 
 | Service | Role | Technologie |
 |---------|------|-------------|
-| AIService | Generation contenu | Vercel AI SDK + Claude |
+| AIService | Generation contenu | Vercel AI SDK (Gemini/OpenAI/Claude) |
 | SearchService | Recherche web | Tavily + Jina AI |
 | EntityService | Extraction entites | LLM + Pydantic schemas |
 | GraphService | Gestion relations | Neo4j / Postgres relations |

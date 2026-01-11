@@ -94,14 +94,34 @@ Architecture multi-database optimisee:
 
 ---
 
-## Qdrant (Vector DB)
+## Embeddings
+
+### Modeles Supportes
+
+| Modele | Provider | Dimensions | Prix | Notes |
+|--------|----------|------------|------|-------|
+| text-embedding-3-small | OpenAI | 1536 | $0.02/1M tokens | Recommande |
+| text-embedding-004 | Google | 768 | Free tier | Si full Google |
+| voyage-3 | Voyage AI | 1024 | $0.06/1M tokens | Meilleur multilingue |
+
+### Configuration pgvector
+
+- **Extension** : pgvector (inclus dans Railway pgvector-pg17)
+- **Distance** : Cosine similarity (vector_cosine_ops)
+- **Index** : HNSW pour recherche rapide
+
+---
+
+## Qdrant (Alternative)
+
+Si migration vers Qdrant (scaling):
 
 ### Collection : page_chunks
 
 | Champ | Type | Description |
 |-------|------|-------------|
 | id | STRING | `{pageId}_{chunkIndex}` |
-| vector | FLOAT[1536] | Embedding (ada-002) |
+| vector | FLOAT[1536] | Embedding |
 | payload.pageId | STRING | Reference vers Page |
 | payload.chunkIndex | INT | Index du chunk |
 | payload.text | STRING | Texte du chunk |

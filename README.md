@@ -37,7 +37,7 @@ Page Elon Musk mentionne deja Tesla (auto-lie)
 
 | Feature | Description |
 |---------|-------------|
-| **Generation AI** | Pages completes generees par Claude |
+| **Generation AI** | Pages completes generees par Gemini/OpenAI/Claude |
 | **Streaming temps reel** | Voir chaque etape de generation |
 | **Graph interactif** | Visualisation Obsidian-style des connexions |
 | **Auto-evolution** | Enrichissement automatique des pages liees |
@@ -52,7 +52,7 @@ Page Elon Musk mentionne deja Tesla (auto-lie)
 |--------|-------------|
 | **Frontend** | Next.js 15 (App Router) + Tailwind + SWR |
 | **Backend** | Hono (TypeScript) + Vercel AI SDK |
-| **AI** | Claude (Anthropic) |
+| **AI** | Gemini / OpenAI / Claude (au choix) |
 | **Database** | PostgreSQL + Qdrant (vectors) + Redis |
 | **Queue** | BullMQ |
 | **Search** | Tavily + Jina AI |
@@ -72,7 +72,7 @@ Page Elon Musk mentionne deja Tesla (auto-lie)
 │                      [Backend Hono]                      │
 │                       /    │    \                        │
 │                      ↓     ↓     ↓                       │
-│              [Tavily] [Claude] [Qdrant]                  │
+│              [Tavily] [AI LLM] [Qdrant]                  │
 │                 │        │        │                      │
 │                 └────────┼────────┘                      │
 │                          ↓                               │
@@ -105,7 +105,7 @@ Page Elon Musk mentionne deja Tesla (auto-lie)
 - Node.js 20+
 - PostgreSQL
 - Redis
-- Compte Anthropic (Claude API)
+- Compte API AI (Google Gemini, OpenAI, ou Anthropic)
 - Compte Tavily (Search API)
 
 ### Installation
@@ -139,7 +139,10 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 DATABASE_URL=postgresql://...
 REDIS_URL=redis://localhost:6379
-ANTHROPIC_API_KEY=sk-ant-...
+# AI (choisir un)
+GOOGLE_GENERATIVE_AI_API_KEY=...
+# ou OPENAI_API_KEY=...
+# ou ANTHROPIC_API_KEY=...
 TAVILY_API_KEY=tvly-...
 QDRANT_URL=http://localhost:6333
 ```
@@ -234,6 +237,8 @@ MIT
 ## Acknowledgments
 
 - [Vercel AI SDK](https://sdk.vercel.ai/) - Streaming AI
+- [Google Gemini](https://ai.google.dev/) - AI Generation
+- [OpenAI](https://openai.com/) - AI Generation
 - [Anthropic Claude](https://anthropic.com/) - AI Generation
 - [Tavily](https://tavily.com/) - Web Search API
 - [Qdrant](https://qdrant.tech/) - Vector Database

@@ -6,7 +6,7 @@
 |--------|-------------|---------------|
 | Frontend | Next.js 15 (App Router) | SSR/SEO, React Server Components |
 | Backend | Hono (TypeScript) | Rapide, leger, Edge-ready |
-| AI | Vercel AI SDK + Claude | Streaming natif, tools/agents |
+| AI | Vercel AI SDK + Gemini/OpenAI/Claude | Streaming natif, tools/agents |
 | DB Pages | PostgreSQL | ACID, JSON, full-text |
 | Vector DB | Qdrant | Vector search performant |
 | Graph (Phase 2) | Neo4j | Traversal optimise |
@@ -75,21 +75,56 @@ Si besoin de performance extreme:
 
 ## AI & Generation
 
-### Vercel AI SDK + Claude
+### Vercel AI SDK (Multi-Provider)
 
-**Pourquoi ?**
+**Pourquoi Vercel AI SDK ?**
 - Streaming natif (SSE)
 - Tools/Agents integres
 - Provider-agnostic (switch facile)
 - Excellent avec Next.js
 
-**Modeles :**
-| Usage | Modele |
-|-------|--------|
-| Generation pages | Claude Sonnet |
-| Extraction entites | Claude Sonnet |
-| Edition sections | Claude Haiku (rapide) |
-| Embeddings | OpenAI ada-002 |
+**Providers supportes :**
+| Provider | Modeles | Avantages |
+|----------|---------|-----------|
+| Google Gemini | gemini-2.0-flash, gemini-pro | Rapide, bon rapport qualite/prix |
+| OpenAI | gpt-4o, gpt-4o-mini | Large ecosysteme, fiable |
+| Anthropic | claude-sonnet, claude-haiku | Excellent pour texte long |
+
+**Usage recommande :**
+| Usage | Modele suggere |
+|-------|----------------|
+| Generation pages | gemini-2.0-flash / gpt-4o |
+| Extraction entites | gemini-flash / gpt-4o-mini |
+| Edition sections | gemini-flash / claude-haiku |
+
+---
+
+## Embeddings
+
+### Modeles Compares
+
+| Modele | Provider | Dimensions | Prix/1M tokens | Qualite FR |
+|--------|----------|------------|----------------|------------|
+| **text-embedding-3-small** | OpenAI | 1536 | $0.02 | Excellent |
+| text-embedding-3-large | OpenAI | 3072 | $0.13 | Meilleur |
+| text-embedding-004 | Google | 768 | Free tier | Tres bon |
+| voyage-3 | Voyage AI | 1024 | $0.06 | Excellent multilingue |
+
+### Recommandation
+
+**text-embedding-3-small** (OpenAI) pour PedIA:
+- Meilleur rapport qualite/prix
+- 1536 dimensions = precision optimale
+- Excellent support francais
+- Compatible pgvector et Qdrant
+
+**Alternative full-Google:** text-embedding-004 si deja sur Gemini
+
+### Configuration
+
+- **Chunk size** : ~500 tokens
+- **Overlap** : 50 tokens (evite coupures mid-phrase)
+- **Distance** : Cosine similarity
 
 ---
 
@@ -239,7 +274,7 @@ Neo4j Aura (Phase 2)
 | Qdrant Cloud | Free | $0 |
 | Upstash | Free | $0 |
 | Tavily | Free | $0 |
-| Claude API | Usage | ~$20 |
+| AI API (Gemini/OpenAI/Claude) | Usage | ~$20 |
 | **Total** | | ~$25/mois |
 
 ### Phase Production (10,000 users/mois)
@@ -252,7 +287,7 @@ Neo4j Aura (Phase 2)
 | Qdrant Cloud | Startup | ~$50 |
 | Upstash | Pay-as-you-go | ~$20 |
 | Bright Data | | ~$100 |
-| Claude API | Usage | ~$200 |
+| AI API (Gemini/OpenAI/Claude) | Usage | ~$200 |
 | **Total** | | ~$465/mois |
 
 ---
@@ -274,7 +309,7 @@ Neo4j Aura (Phase 2)
 
 | Risque | Mitigation |
 |--------|------------|
-| Cout API Claude | Cache agressif, generation incrementale |
+| Cout API AI | Cache agressif, multi-provider fallback |
 | Performance Qdrant | Sharding si necessaire |
 | Complexite Neo4j | Reporter a Phase 2 |
 | Lock-in Vercel | Next.js portable |
