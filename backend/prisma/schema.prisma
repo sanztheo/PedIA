@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// PAGES - Encyclopedia articles
+// ============================================
+
+model Page {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  title     String
+  content   String   @db.Text
+  summary   String?  @db.Text
+  status    PageStatus @default(DRAFT)
+  viewCount Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  entities  PageEntity[]
+  versions  PageVersion[]
+  sources   PageSource[]
+
+  // Graph relations (as source)
+  outgoingLinks PageLink[] @relation("SourcePage")
+  // Graph relations (as target)
+  incomingLinks PageLink[] @relation("TargetPage")
+  // Embeddings
+  embeddings    Embedding[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PageStatus {
+  DRAFT
+  GENERATING
+  PUBLISHED
+  ERROR
+}
+
+// ============================================
+// PAGE VERSIONS - History tracking
+// ============================================
+
+model PageVersion {
+  id        String   @id @default(uuid())
+  pageId    String
+  content   String   @db.Text
+  summary   String?  @db.Text
+  version   Int
+  changeLog String?
+
+  createdAt DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, version])
+  @@index([pageId])
+}
+
+// ============================================
+// ENTITIES - Detected named entities
+// ============================================
+
+model Entity {
+  id          String     @id @default(uuid())
+  name        String
+  normalizedName String  @unique
+  type        EntityType
+  description String?    @db.Text
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  pages       PageEntity[]
+
+  // Graph relations
+  relationsFrom EntityRelation[] @relation("FromEntity")
+  relationsTo   EntityRelation[] @relation("ToEntity")
+
+  @@index([normalizedName])
+  @@index([type])
+}
+
+enum EntityType {
+  PERSON
+  ORGANIZATION
+  LOCATION
+  EVENT
+  CONCEPT
+  WORK
+  OTHER
+}
+
+// ============================================
+// PAGE-ENTITY - Junction table
+// ============================================
+
+model PageEntity {
+  id         String   @id @default(uuid())
+  pageId     String
+  entityId   String
+  mentions   Int      @default(1)
+  relevance  Float    @default(0.5)
+
+  createdAt  DateTime @default(now())
+
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, entityId])
+  @@index([pageId])
+  @@index([entityId])
+}
+
+// ============================================
+// ENTITY RELATIONS - Knowledge graph edges
+// ============================================
+
+model EntityRelation {
+  id           String       @id @default(uuid())
+  fromEntityId String
+  toEntityId   String
+  type         RelationType
+  strength     Float        @default(0.5)
+
+  createdAt    DateTime     @default(now())
+
+  fromEntity Entity @relation("FromEntity", fields: [fromEntityId], references: [id], onDelete: Cascade)
+  toEntity   Entity @relation("ToEntity", fields: [toEntityId], references: [id], onDelete: Cascade)
+
+  @@unique([fromEntityId, toEntityId, type])
+  @@index([fromEntityId])
+  @@index([toEntityId])
+}
+
+enum RelationType {
+  RELATED_TO
+  PART_OF
+  INSTANCE_OF
+  LOCATED_IN
+  CREATED_BY
+  MEMBER_OF
+  INFLUENCED_BY
+  PRECEDED_BY
+  FOLLOWED_BY
+}
+
+// ============================================
+// PAGE LINKS - Internal wiki links
+// ============================================
+
+model PageLink {
+  id           String   @id @default(uuid())
+  sourcePageId String
+  targetPageId String
+  anchorText   String?
+
+  createdAt    DateTime @default(now())
+
+  sourcePage Page @relation("SourcePage", fields: [sourcePageId], references: [id], onDelete: Cascade)
+  targetPage Page @relation("TargetPage", fields: [targetPageId], references: [id], onDelete: Cascade)
+
+  @@unique([sourcePageId, targetPageId])
+  @@index([sourcePageId])
+  @@index([targetPageId])
+}
+
+// ============================================
+// SOURCES - Web sources for pages
+// ============================================
+
+model Source {
+  id          String   @id @default(uuid())
+  url         String   @unique
+  title       String?
+  domain      String
+  content     String?  @db.Text
+  reliability Float    @default(0.5)
+
+  fetchedAt   DateTime @default(now())
+
+  // Relations
+  pages PageSource[]
+
+  @@index([domain])
+  @@index([reliability])
+}
+
+model PageSource {
+  id       String @id @default(uuid())
+  pageId   String
+  sourceId String
+  usedFor  String?
+
+  createdAt DateTime @default(now())
+
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, sourceId])
+  @@index([pageId])
+  @@index([sourceId])
+}
+
+// ============================================
+// GENERATION QUEUE - Async page generation
+// ============================================
+
+model GenerationJob {
+  id        String        @id @default(uuid())
+  query     String
+  slug      String
+  status    JobStatus     @default(PENDING)
+  progress  Json?
+  error     String?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum JobStatus {
+  PENDING
+  SEARCHING
+  ANALYZING
+  GENERATING
+  EXTRACTING
+  COMPLETED
+  FAILED
+}
+
+// ============================================
+// EMBEDDINGS - Vector search (pgvector)
+// ============================================
+
+model Embedding {
+  id         String   @id @default(uuid())
+  pageId     String
+  chunkIndex Int
+  content    String   @db.Text
+  // Vector stocke via pgvector extension
+  // embedding Unsupported("vector(1536)")
+
+  createdAt  DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, chunkIndex])
+  @@index([pageId])
+}
