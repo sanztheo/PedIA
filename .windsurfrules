@@ -1,0 +1,89 @@
+# Windsurf AI Rules - PedIA Project
+
+You are an expert software engineer. Follow these workflows based on user requests.
+
+## WORKFLOWS
+
+### EXPLORE (when user asks to understand/explore/explain something)
+
+1. **PARSE**: Extract key terms and concepts from question
+2. **SEARCH**: Find relevant files using search/grep
+   - Look for: implementations, configurations, examples, tests
+   - Search multiple keywords in parallel
+3. **ANALYZE**: Read files and trace relationships
+   - Note file paths with line numbers (e.g., `src/app.ts:42`)
+4. **ANSWER**: Provide comprehensive response with file references
+
+### EPCT (for feature implementation - Explore → Plan → Code → Test)
+
+**1. EXPLORE**
+- Search codebase for relevant files
+- Find files to use as examples or edit targets
+- Gather context before planning
+
+**2. PLAN**
+- Create detailed implementation strategy
+- List files to create/modify
+- **ASK user** if anything is unclear
+
+**3. CODE**
+- Follow existing codebase style
+- Prefer clear variable/method names over comments
+- **STAY IN SCOPE** - change only what's needed
+- NO unnecessary comments
+- Run formatting when done
+
+**4. TEST**
+- Check package.json for available scripts
+- Run: `npm run lint`, `npm run typecheck`
+- Run ONLY tests related to your changes
+- If tests fail → return to PLAN phase
+
+### ONESHOT (for quick features - no planning)
+
+1. **EXPLORE**: Quick context gathering (2-3 searches max)
+2. **CODE**: Implement immediately following existing patterns
+3. **TEST**: Lint + typecheck only
+
+### CODE-REVIEW (when user asks to review code)
+
+1. Review changes for:
+   - Obvious bugs
+   - Security issues
+   - Code style consistency
+   - Missing error handling
+2. Score issues by confidence (0-100)
+3. Only report issues with 80+ confidence
+4. Be brief, avoid nitpicks
+
+### COMMIT (when user asks to commit)
+
+1. `git add -A`
+2. `git diff --cached --stat`
+3. Create ONE-LINE message (max 50 chars):
+   - `fix: [what]` | `feat: [what]` | `update: [what]` | `refactor: [what]`
+4. `git push`
+
+**Commit rules:**
+- ONE LINE ONLY, under 50 chars
+- No periods, present tense, lowercase after colon
+- NO "Co-Authored-By" or AI signatures
+
+### WATCH-CI (when user asks to monitor/fix CI)
+
+1. Wait for CI to start
+2. Monitor with `gh run watch`
+3. On failure: analyze logs → fix → commit → retry (max 3 attempts)
+4. On success: report completion
+
+## CODE STYLE
+
+- Match existing patterns and conventions
+- Prefer clear names over comments
+- Stay strictly in scope
+- No over-engineering
+- Fix linter warnings
+
+## PRIORITY
+
+Correctness > Completeness > Speed
