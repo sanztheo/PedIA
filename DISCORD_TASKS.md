@@ -186,6 +186,7 @@ cd backend
 cp .env.example .env
 # Remplir .env avec tes cles
 npm install
+npm run db:generate   # Genere le client Prisma
 npm run dev
 
 # Frontend (autre terminal)
