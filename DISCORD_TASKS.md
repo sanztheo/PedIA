@@ -15,9 +15,9 @@ pedia/
 
 ---
 
-## Theo - Backend AI Pipeline
+## Theo - Backend AI + Frontend Streaming
 
-**Focus:** Generation IA, streaming, extraction d'entites
+**Focus:** Pipeline IA, SSE streaming backend + frontend
 
 ### Premiere tache: Pipeline de generation SSE
 
@@ -32,7 +32,7 @@ Implementer le endpoint `/api/generate` qui:
 ```
 backend/src/
 ├── ai/
-│   ├── agent.ts              # PREMIER FICHIER - Orchestration AI
+│   ├── agent.ts              # Orchestration AI
 │   ├── prompts.ts            # System prompts
 │   └── tools/
 │       ├── search.tool.ts    # Tool recherche web
@@ -43,6 +43,30 @@ backend/src/
 │   └── ner.service.ts
 └── routes/
     └── generate.ts           # Completer le SSE streaming
+
+frontend/
+├── components/
+│   ├── generation/
+│   │   ├── GenerationProgress.tsx
+│   │   └── StepIndicator.tsx
+│   └── graph/
+│       ├── GraphView.tsx
+│       └── GraphSidebar.tsx
+└── app/
+    └── search/
+        └── page.tsx
+```
+
+### Fichiers deja crees (prets a utiliser):
+```
+backend/src/lib/prisma.ts     # Client Prisma
+backend/src/lib/redis.ts      # Client Redis
+backend/src/types/index.ts    # Types SSE
+
+frontend/lib/api.ts           # Client API
+frontend/lib/sse.ts           # Client SSE + mock
+frontend/hooks/useSSE.ts      # Hook SSE pret
+frontend/types/index.ts       # Types partages
 ```
 
 ### Pour commencer:
@@ -69,9 +93,6 @@ Implementer les services de base pour les pages:
 ### Fichiers a creer:
 ```
 backend/src/
-├── lib/
-│   ├── prisma.ts             # PREMIER FICHIER - Client Prisma
-│   └── redis.ts              # Client Redis (cache)
 ├── services/
 │   ├── page.service.ts       # CRUD pages
 │   ├── entity.service.ts     # CRUD entites
@@ -82,51 +103,18 @@ backend/src/
     └── search.ts             # Completer les routes
 ```
 
+### Fichiers deja crees (prets a utiliser):
+```
+backend/src/lib/prisma.ts     # UTILISE CA - Client Prisma singleton
+backend/src/lib/redis.ts      # Client Redis + helpers cache
+backend/src/types/index.ts    # Types partages
+```
+
 ### Pour commencer:
 ```bash
 cd backend
-# Creer src/lib/prisma.ts avec le client
-# Puis src/services/page.service.ts
-```
-
----
-
-## Mirochill - Frontend Streaming + Graph
-
-**Focus:** SSE streaming UI, visualisation graphe
-
-### Premiere tache: Composant de progression SSE
-
-Implementer l'UI de progression quand l'AI genere:
-1. Hook useSSE pour ecouter les events
-2. Composant GenerationProgress avec les etapes
-3. Animations de chargement
-4. Integration avec la page de recherche
-
-### Fichiers a creer:
-```
-frontend/
-├── hooks/
-│   └── useSSE.ts             # PREMIER FICHIER - Hook SSE
-├── lib/
-│   └── sse.ts                # Client SSE
-├── components/
-│   ├── generation/
-│   │   ├── GenerationProgress.tsx
-│   │   └── StepIndicator.tsx
-│   └── graph/
-│       ├── GraphView.tsx
-│       └── GraphSidebar.tsx
-└── app/
-    └── search/
-        └── page.tsx          # Page de recherche avec progress
-```
-
-### Pour commencer:
-```bash
-cd frontend
-npm install eventsource-parser
-# Puis creer hooks/useSSE.ts
+# prisma.ts est deja cree!
+# Commence direct par src/services/page.service.ts
 ```
 
 ---
@@ -148,7 +136,7 @@ Implementer la structure de base:
 frontend/
 ├── components/
 │   ├── layout/
-│   │   ├── MainLayout.tsx    # PREMIER FICHIER - Layout principal
+│   │   ├── MainLayout.tsx    # PREMIER FICHIER
 │   │   ├── Sidebar.tsx
 │   │   └── Header.tsx
 │   ├── search/
@@ -161,8 +149,12 @@ frontend/
 │   └── wiki/
 │       └── [slug]/
 │           └── page.tsx
-└── lib/
-    └── api.ts                # Client API
+```
+
+### Fichiers deja crees (prets a utiliser):
+```
+frontend/lib/api.ts           # Client API - utilise pour fetch
+frontend/types/index.ts       # Types Page, Entity, etc.
 ```
 
 ### Pour commencer:
@@ -186,7 +178,7 @@ cd backend
 cp .env.example .env
 # Remplir .env avec tes cles
 npm install
-npm run db:generate   # Genere le client Prisma
+npm run db:generate
 npm run dev
 
 # Frontend (autre terminal)
@@ -214,21 +206,18 @@ npm run dev
 
 ### Sprint 1 - Fondations
 1. **Glamgar** - Homepage + Layout + SearchBar
-2. **Nixou** - Prisma client + PageService + routes pages
-3. **Mirochill** - Hook useSSE + GenerationProgress basique
-4. **Theo** - Agent AI + generation SSE basique
+2. **Nixou** - PageService + routes pages
+3. **Theo** - Agent AI + generation SSE basique
 
 ### Sprint 2 - Core Features
 1. **Glamgar** - Page wiki/[slug] + MarkdownRenderer
 2. **Nixou** - EntityService + GraphService + routes graph
-3. **Mirochill** - GraphView avec react-force-graph
-4. **Theo** - Extraction entites + web search integration
+3. **Theo** - Extraction entites + GenerationProgress UI + GraphView
 
 ### Sprint 3 - Polish
 1. **Glamgar** - Dark mode + animations + responsive
 2. **Nixou** - Cache Redis + optimisations queries
-3. **Mirochill** - GraphSidebar + interactions graph
-4. **Theo** - BullMQ jobs + enrichissement auto
+3. **Theo** - BullMQ jobs + enrichissement auto + GraphSidebar
 
 ---
 

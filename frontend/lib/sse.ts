@@ -1,0 +1,161 @@
+import type { SSEEvent, GenerationStep } from "@/types";
+
+export type SSECallback = (event: SSEEvent) => void;
+
+export function createSSEConnection(
+  url: string,
+  onEvent: SSECallback,
+  onError?: (error: Error) => void,
+): () => void {
+  const eventSource = new EventSource(url);
+
+  eventSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data) as SSEEvent;
+      onEvent(data);
+    } catch {
+      console.error("Failed to parse SSE event:", event.data);
+    }
+  };
+
+  eventSource.addEventListener("step", (event) => {
+    try {
+      const data = JSON.parse((event as MessageEvent).data) as SSEEvent;
+      onEvent(data);
+    } catch {
+      console.error("Failed to parse step event");
+    }
+  });
+
+  eventSource.addEventListener("complete", (event) => {
+    try {
+      const data = JSON.parse((event as MessageEvent).data) as SSEEvent;
+      onEvent(data);
+      eventSource.close();
+    } catch {
+      console.error("Failed to parse complete event");
+    }
+  });
+
+  eventSource.addEventListener("error", (event) => {
+    try {
+      const data = JSON.parse((event as MessageEvent).data) as SSEEvent;
+      onEvent(data);
+    } catch {
+      onError?.(new Error("SSE connection error"));
+    }
+    eventSource.close();
+  });
+
+  eventSource.onerror = () => {
+    onError?.(new Error("SSE connection failed"));
+    eventSource.close();
+  };
+
+  return () => eventSource.close();
+}
+
+const MOCK_DELAYS: Record<GenerationStep, number> = {
+  search: 1500,
+  analyze: 2000,
+  generate: 3000,
+  extract: 1000,
+  save: 500,
+};
+
+export function createMockSSE(
+  _query: string,
+  onEvent: SSECallback,
+): () => void {
+  let cancelled = false;
+  const steps: GenerationStep[] = [
+    "search",
+    "analyze",
+    "generate",
+    "extract",
+    "save",
+  ];
+
+  async function runMock() {
+    for (const step of steps) {
+      if (cancelled) return;
+
+      onEvent({
+        type: "step_start",
+        step,
+        message: getStepMessage(step),
+      });
+
+      await delay(MOCK_DELAYS[step]);
+      if (cancelled) return;
+
+      if (step === "generate") {
+        const chunks = [
+          "# Tesla\n\n",
+          "Tesla, Inc. est une entreprise américaine ",
+          "spécialisée dans les véhicules électriques, ",
+          "le stockage d'énergie et les panneaux solaires.\n\n",
+          "## Histoire\n\n",
+          "Fondée en 2003 par Martin Eberhard et Marc Tarpenning, ",
+          "l'entreprise a été rejointe par Elon Musk en 2004.\n\n",
+        ];
+
+        for (const chunk of chunks) {
+          if (cancelled) return;
+          onEvent({ type: "content_chunk", data: { content: chunk } });
+          await delay(200);
+        }
+      }
+
+      if (step === "extract") {
+        const entities = [
+          { name: "Elon Musk", type: "PERSON" as const },
+          { name: "SpaceX", type: "ORGANIZATION" as const },
+          { name: "Palo Alto", type: "LOCATION" as const },
+        ];
+
+        for (const entity of entities) {
+          if (cancelled) return;
+          onEvent({ type: "entity_found", data: { entity } });
+          await delay(300);
+        }
+      }
+
+      onEvent({ type: "step_complete", step });
+    }
+
+    if (!cancelled) {
+      onEvent({
+        type: "complete",
+        data: {
+          page: {
+            id: "mock-id",
+            slug: "tesla",
+            title: "Tesla",
+          },
+        },
+      });
+    }
+  }
+
+  runMock();
+
+  return () => {
+    cancelled = true;
+  };
+}
+
+function getStepMessage(step: GenerationStep): string {
+  const messages: Record<GenerationStep, string> = {
+    search: "Recherche web en cours...",
+    analyze: "Analyse des sources...",
+    generate: "Génération du contenu...",
+    extract: "Extraction des entités...",
+    save: "Sauvegarde...",
+  };
+  return messages[step];
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
