@@ -1,0 +1,104 @@
+# ===============================
+# OS
+# ===============================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ===============================
+# IDEs
+# ===============================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# ===============================
+# Environment
+# ===============================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+*.pem
+
+# ===============================
+# Rust (Backend)
+# ===============================
+target/
+**/*.rs.bk
+Cargo.lock
+*.rlib
+*.rmeta
+*.so
+*.dylib
+*.dll
+
+# ===============================
+# Node.js / TypeScript (Frontend)
+# ===============================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ===============================
+# Next.js
+# ===============================
+.next/
+out/
+.vercel
+
+# ===============================
+# Build outputs
+# ===============================
+dist/
+build/
+*.js.map
+
+# ===============================
+# Database
+# ===============================
+*.db
+*.sqlite
+*.sqlite3
+data/
+postgres-data/
+
+# ===============================
+# Vector DB (Qdrant)
+# ===============================
+qdrant_storage/
+.qdrant/
+
+# ===============================
+# Logs
+# ===============================
+logs/
+*.log
+
+# ===============================
+# Testing
+# ===============================
+coverage/
+.nyc_output/
+*.lcov
+
+# ===============================
+# Misc
+# ===============================
+.cache/
+tmp/
+temp/
+*.bak
+*.tmp

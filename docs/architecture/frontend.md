@@ -2,11 +2,14 @@
 
 ## Stack
 
-- **Framework**: Next.js 15 (App Router)
-- **Styling**: Tailwind CSS
-- **State**: React Context + SWR
-- **Streaming**: Vercel AI SDK (@ai-sdk/react)
-- **Graph**: react-force-graph / Sigma.js
+| Technologie | Role |
+|-------------|------|
+| Next.js 15 | Framework (App Router) |
+| Tailwind CSS | Styling |
+| SWR | Data fetching + cache |
+| Vercel AI SDK | Streaming AI |
+| react-force-graph | Visualisation graph |
+| Framer Motion | Animations |
 
 ---
 
@@ -28,29 +31,26 @@ frontend/
 |   +-- components/
 |   |   +-- search/
 |   |   |   +-- SearchBar.tsx
-|   |   |   +-- SearchProgress.tsx   # Steps AI en temps reel
+|   |   |   +-- SearchProgress.tsx
 |   |   |   +-- SearchResults.tsx
 |   |   +-- page/
-|   |   |   +-- PageContent.tsx      # Markdown renderer
-|   |   |   +-- PageLinks.tsx        # Liens vers autres pages
+|   |   |   +-- PageContent.tsx
+|   |   |   +-- PageLinks.tsx
 |   |   |   +-- PageMetadata.tsx
 |   |   +-- graph/
-|   |   |   +-- GraphView.tsx        # Main graph component
-|   |   |   +-- GraphMinimap.tsx     # Sidebar mini-graph
+|   |   |   +-- GraphView.tsx
+|   |   |   +-- GraphMinimap.tsx
 |   |   |   +-- GraphControls.tsx
 |   |   +-- layout/
 |   |       +-- Sidebar.tsx
 |   |       +-- Header.tsx
 |   +-- hooks/
-|   |   +-- useSearch.ts             # Search + generation hook
-|   |   +-- useGraph.ts              # Graph data hook
-|   |   +-- usePage.ts               # Page data hook
+|   |   +-- useSearch.ts
+|   |   +-- useGraph.ts
+|   |   +-- usePage.ts
 |   +-- services/
-|   |   +-- api.ts                   # API client
+|   |   +-- api.ts
 |   +-- types/
-|       +-- page.ts
-|       +-- graph.ts
-|       +-- search.ts
 +-- public/
 +-- next.config.js
 +-- tailwind.config.js
@@ -62,100 +62,36 @@ frontend/
 
 ### 1. Homepage (`/`)
 
-Design minimaliste avec recherche centree.
-
-```tsx
-// app/page.tsx
-export default function HomePage() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-2xl px-4">
-        <h1 className="text-4xl font-bold text-center mb-8">PedIA</h1>
-        <p className="text-center text-gray-600 mb-8">
-          L'encyclopedie auto-evolutive
-        </p>
-        <SearchBar />
-      </div>
-    </main>
-  );
-}
-```
+**Design** : Minimaliste, search centree
+- Logo + tagline
+- Barre de recherche prominente
+- Pas de sidebar
 
 ### 2. Page Encyclopedie (`/page/[slug]`)
 
-SSR pour SEO optimal.
+**Design** : Article style Wikipedia
+- Titre + metadata en haut
+- Contenu markdown rendu
+- Sidebar avec liens connexes
+- Mini-graph local
 
-```tsx
-// app/page/[slug]/page.tsx
-export async function generateMetadata({ params }) {
-  const page = await getPage(params.slug);
-  return {
-    title: `${page.title} - PedIA`,
-    description: page.summary,
-  };
-}
-
-export default async function PageView({ params }) {
-  const page = await getPage(params.slug);
-  const relatedPages = await getRelatedPages(page.id);
-
-  return (
-    <div className="flex">
-      <article className="flex-1 prose max-w-none">
-        <PageContent content={page.content} />
-      </article>
-      <aside className="w-64 ml-8">
-        <PageLinks links={relatedPages} />
-      </aside>
-    </div>
-  );
-}
-```
+**SSR** : Oui (SEO critique)
 
 ### 3. Search Progress (`/search`)
 
-Vue temps reel de la generation.
-
-```tsx
-// app/search/page.tsx
-'use client';
-
-export default function SearchPage() {
-  const searchParams = useSearchParams();
-  const query = searchParams.get('q');
-  const { steps, result, status } = useSearch(query);
-
-  return (
-    <div className="max-w-4xl mx-auto">
-      <SearchProgress steps={steps} />
-      {status === 'complete' && <SearchResults result={result} />}
-    </div>
-  );
-}
-```
+**Design** : Vue temps reel generation
+- Liste des etapes avec status
+- Contenu qui se genere en streaming
+- Entites detectees en temps reel
+- Sources utilisees
 
 ### 4. Graph Explorer (`/explore`)
 
-Visualisation Obsidian-style.
-
-```tsx
-// app/explore/page.tsx
-'use client';
-
-export default function ExplorePage() {
-  const { nodes, links, loading } = useGraph();
-
-  return (
-    <div className="h-screen">
-      <GraphView
-        nodes={nodes}
-        links={links}
-        onNodeClick={(node) => router.push(`/page/${node.slug}`)}
-      />
-    </div>
-  );
-}
-```
+**Design** : Plein ecran
+- Graph interactif centre
+- Controles zoom/pan
+- Minimap en coin
+- Filtres par type d'entite
 
 ---
 
@@ -163,355 +99,143 @@ export default function ExplorePage() {
 
 ### SearchProgress
 
-Affiche les etapes de generation en temps reel.
+Affiche les etapes de generation AI:
+- Icone de status (pending/loading/done/error)
+- Label de l'etape
+- Details optionnels
+- Duree d'execution
 
-```tsx
-// components/search/SearchProgress.tsx
-interface Step {
-  id: string;
-  label: string;
-  status: 'pending' | 'in_progress' | 'complete' | 'error';
-  details?: string;
-}
-
-export function SearchProgress({ steps }: { steps: Step[] }) {
-  return (
-    <div className="space-y-4">
-      {steps.map((step) => (
-        <div key={step.id} className="flex items-center gap-3">
-          <StepIcon status={step.status} />
-          <div>
-            <p className="font-medium">{step.label}</p>
-            {step.details && (
-              <p className="text-sm text-gray-500">{step.details}</p>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function StepIcon({ status }: { status: Step['status'] }) {
-  switch (status) {
-    case 'pending':
-      return <Circle className="text-gray-300" />;
-    case 'in_progress':
-      return <Spinner className="text-blue-500 animate-spin" />;
-    case 'complete':
-      return <CheckCircle className="text-green-500" />;
-    case 'error':
-      return <XCircle className="text-red-500" />;
-  }
-}
-```
+**Etapes affichees** :
+1. Recherche web
+2. Analyse des sources
+3. Verification
+4. Generation du contenu
+5. Extraction des entites
+6. Creation des liens
+7. Sauvegarde
 
 ### GraphView
 
-Visualisation des liens entre pages.
+Visualisation des liens entre pages:
+- Noeuds = pages/entites
+- Liens = relations
+- Couleurs par type d'entite
+- Taille par nombre de connexions
 
-```tsx
-// components/graph/GraphView.tsx
-import ForceGraph2D from 'react-force-graph-2d';
-
-interface GraphNode {
-  id: string;
-  label: string;
-  slug: string;
-  category?: string;
-}
-
-interface GraphLink {
-  source: string;
-  target: string;
-}
-
-export function GraphView({
-  nodes,
-  links,
-  onNodeClick
-}: {
-  nodes: GraphNode[];
-  links: GraphLink[];
-  onNodeClick: (node: GraphNode) => void;
-}) {
-  const graphRef = useRef();
-
-  const graphData = useMemo(() => ({
-    nodes: nodes.map(n => ({
-      ...n,
-      val: 1 + (links.filter(l =>
-        l.source === n.id || l.target === n.id
-      ).length * 0.5)
-    })),
-    links
-  }), [nodes, links]);
-
-  return (
-    <ForceGraph2D
-      ref={graphRef}
-      graphData={graphData}
-      nodeLabel="label"
-      nodeColor={node => getCategoryColor(node.category)}
-      linkColor={() => '#e5e7eb'}
-      onNodeClick={onNodeClick}
-      nodeCanvasObject={(node, ctx, globalScale) => {
-        // Custom node rendering
-        const label = node.label;
-        const fontSize = 12 / globalScale;
-        ctx.font = `${fontSize}px Sans-Serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#374151';
-        ctx.fillText(label, node.x, node.y + 10);
-      }}
-      cooldownTime={3000}
-      enableNodeDrag={true}
-    />
-  );
-}
-```
+**Interactions** :
+- Click = naviguer vers page
+- Hover = tooltip avec details
+- Drag = repositionner
+- Scroll = zoom
 
 ### Sidebar
 
-Navigation avec mini-graph.
-
-```tsx
-// components/layout/Sidebar.tsx
-export function Sidebar({ currentPageId }: { currentPageId?: string }) {
-  const { recentPages } = useRecentPages();
-  const { localGraph } = useLocalGraph(currentPageId);
-
-  return (
-    <aside className="w-64 border-r h-screen sticky top-0 p-4">
-      {/* Logo + Search */}
-      <div className="mb-6">
-        <Link href="/" className="text-xl font-bold">PedIA</Link>
-      </div>
-
-      {/* Mini Graph */}
-      {localGraph && (
-        <div className="mb-6 h-48 border rounded">
-          <GraphMinimap
-            nodes={localGraph.nodes}
-            links={localGraph.links}
-            highlightId={currentPageId}
-          />
-        </div>
-      )}
-
-      {/* Recent Pages */}
-      <nav>
-        <h3 className="text-sm font-semibold mb-2">Pages recentes</h3>
-        <ul className="space-y-1">
-          {recentPages.map(page => (
-            <li key={page.id}>
-              <Link
-                href={`/page/${page.slug}`}
-                className="text-sm hover:underline"
-              >
-                {page.title}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {/* All Pages Button */}
-      <Link
-        href="/explore"
-        className="mt-6 block text-center py-2 border rounded hover:bg-gray-50"
-      >
-        Voir toutes les pages
-      </Link>
-    </aside>
-  );
-}
-```
+Navigation persistante:
+- Logo + lien accueil
+- Mini-graph local (si sur une page)
+- Pages recentes
+- Bouton "Toutes les pages"
 
 ---
 
-## Hooks Principaux
+## Patterns de Data Fetching
 
-### useSearch
+### Server Components (Default)
 
-Hook pour recherche + generation avec streaming.
+Pages encyclopedie utilisent Server Components:
+- Fetch cote serveur
+- HTML pre-rendu
+- SEO optimal
+- Cache CDN
 
-```tsx
-// hooks/useSearch.ts
-import { useChat } from '@ai-sdk/react';
+### Client Components
 
-interface SearchStep {
-  id: string;
-  label: string;
-  status: 'pending' | 'in_progress' | 'complete' | 'error';
-  details?: string;
-}
+Parties interactives:
+- SearchProgress (streaming)
+- GraphView (interactions)
+- SearchBar (input)
 
-export function useSearch(query: string | null) {
-  const [steps, setSteps] = useState<SearchStep[]>([
-    { id: 'search', label: 'Recherche web', status: 'pending' },
-    { id: 'analyze', label: 'Analyse des sources', status: 'pending' },
-    { id: 'generate', label: 'Generation du contenu', status: 'pending' },
-    { id: 'extract', label: 'Extraction des entites', status: 'pending' },
-    { id: 'link', label: 'Creation des liens', status: 'pending' },
-  ]);
+### SWR pour Cache Client
 
-  const { messages, status, append } = useChat({
-    api: `${process.env.NEXT_PUBLIC_API_URL}/api/generate`,
-    onResponse: (response) => {
-      // Parse SSE for step updates
-    },
-  });
-
-  useEffect(() => {
-    if (query) {
-      append({ role: 'user', content: query });
-    }
-  }, [query]);
-
-  return {
-    steps,
-    result: messages.find(m => m.role === 'assistant'),
-    status,
-  };
-}
-```
-
-### useGraph
-
-Hook pour donnees du graph.
-
-```tsx
-// hooks/useGraph.ts
-import useSWR from 'swr';
-
-export function useGraph(options?: { pageId?: string; depth?: number }) {
-  const { data, error, isLoading } = useSWR(
-    options?.pageId
-      ? `/api/graph?pageId=${options.pageId}&depth=${options.depth || 2}`
-      : '/api/graph',
-    fetcher
-  );
-
-  return {
-    nodes: data?.nodes || [],
-    links: data?.links || [],
-    loading: isLoading,
-    error,
-  };
-}
-
-export function useLocalGraph(pageId?: string) {
-  return useGraph({ pageId, depth: 1 });
-}
-```
+- Revalidation automatique
+- Cache local
+- Optimistic updates
+- Deduplication des requetes
 
 ---
 
-## Streaming UI Pattern
+## Streaming Pattern
 
-### SSE Event Types
+### SSE (Server-Sent Events)
 
-```typescript
-type SSEEvent =
-  | { type: 'step_start'; step: string; details?: string }
-  | { type: 'step_complete'; step: string }
-  | { type: 'step_error'; step: string; error: string }
-  | { type: 'content_chunk'; content: string }
-  | { type: 'entity_found'; entity: { name: string; type: string } }
-  | { type: 'complete'; pageId: string; slug: string };
-```
+Le frontend se connecte a l'endpoint SSE:
+1. Ouvre connexion EventSource
+2. Recoit events en temps reel
+3. Met a jour l'UI incrementalement
+4. Ferme a la completion
 
-### Event Handling
+### Types d'Events
 
-```tsx
-// Handling SSE events in useSearch
-const eventSource = new EventSource(`${API_URL}/api/generate?q=${query}`);
+| Event | Contenu | Action UI |
+|-------|---------|-----------|
+| step_start | Step ID, details | Marquer etape en cours |
+| step_complete | Step ID | Marquer etape terminee |
+| content_chunk | Texte partiel | Append au contenu |
+| entity_found | Entite detectee | Ajouter a la liste |
+| complete | Page ID, slug | Rediriger vers page |
 
-eventSource.onmessage = (event) => {
-  const data = JSON.parse(event.data);
+---
 
-  switch (data.type) {
-    case 'step_start':
-      setSteps(prev => prev.map(s =>
-        s.id === data.step
-          ? { ...s, status: 'in_progress', details: data.details }
-          : s
-      ));
-      break;
+## Responsive Design
 
-    case 'step_complete':
-      setSteps(prev => prev.map(s =>
-        s.id === data.step
-          ? { ...s, status: 'complete' }
-          : s
-      ));
-      break;
+### Breakpoints
 
-    case 'content_chunk':
-      setContent(prev => prev + data.content);
-      break;
+| Breakpoint | Comportement |
+|------------|--------------|
+| Mobile (< 768px) | Sidebar cachee, menu burger |
+| Tablet (768-1024px) | Sidebar reduite |
+| Desktop (> 1024px) | Sidebar complete |
 
-    case 'complete':
-      router.push(`/page/${data.slug}`);
-      break;
-  }
-};
-```
+### Graph sur Mobile
+
+- 2D uniquement (pas de 3D)
+- Controles simplifies
+- Touch gestures pour zoom/pan
 
 ---
 
 ## Performance Optimizations
 
-### 1. Server Components par defaut
+### 1. Server Components
 
-```tsx
-// Pages SSR pour SEO
-// app/page/[slug]/page.tsx - Server Component (default)
-export default async function PageView({ params }) {
-  const page = await getPage(params.slug); // Server-side fetch
-  return <PageContent content={page.content} />;
-}
-```
+Tout ce qui peut etre SSR l'est:
+- Pages encyclopedie
+- Metadata
+- Navigation
 
-### 2. SWR pour cache client
+### 2. Lazy Loading
 
-```tsx
-// Cache + revalidation automatique
-const { data } = useSWR('/api/pages/recent', fetcher, {
-  revalidateOnFocus: false,
-  dedupingInterval: 60000, // 1 minute
-});
-```
+Composants lourds charges a la demande:
+- GraphView (react-force-graph est lourd)
+- Markdown editor (si edition)
 
-### 3. Graph virtualization
+### 3. Image Optimization
 
-```tsx
-// Pour grands graphs (>1000 nodes)
-<ForceGraph2D
-  graphData={graphData}
-  nodeVisibility={node =>
-    // Only render visible nodes
-    isInViewport(node, viewport)
-  }
-/>
-```
+Next.js Image component:
+- WebP automatique
+- Lazy loading
+- Responsive sizes
 
-### 4. Markdown lazy parsing
+### 4. Route Prefetching
 
-```tsx
-// Parse markdown seulement quand visible
-const ParsedContent = dynamic(() => import('./ParsedContent'), {
-  loading: () => <MarkdownSkeleton />,
-});
-```
+Next.js prefetch les liens visibles:
+- Pages populaires prechargees
+- Navigation instantanee
 
 ---
 
 ## Voir Aussi
 
 - [Architecture Overview](./overview.md)
-- [Backend Architecture](./backend.md)
 - [Streaming UI](../features/streaming-ui.md)
 - [Graph Visualization](../features/graph-visualization.md)
