@@ -11,7 +11,7 @@ PedIA est une encyclopedie auto-evolutive alimentee par l'IA. Chaque recherche e
 | Frontend | Next.js 15 (App Router) + Tailwind + SWR |
 | Backend | Hono (TypeScript) + Vercel AI SDK |
 | Database | PostgreSQL (Prisma) + Qdrant + Redis |
-| AI | Claude (Anthropic) via Vercel AI SDK |
+| AI | Gemini / OpenAI / Claude via Vercel AI SDK |
 | Queue | BullMQ |
 | Deploy | Vercel (frontend) + Railway (backend) |
 
@@ -83,7 +83,7 @@ PedIA/
 1. User search query
 2. Check cache/DB for existing page
 3. Web search (Tavily) + scraping (Jina)
-4. AI generation with streaming (Claude)
+4. AI generation with streaming (Gemini/OpenAI/Claude)
 5. Entity extraction
 6. Graph linking
 7. Save + cache
@@ -147,4 +147,4 @@ npm run typecheck
 | Tavily | Web search | tavily.com |
 | Jina AI | Content extraction | jina.ai |
 | Qdrant | Vector search | qdrant.tech |
-| Claude | AI generation | anthropic.com |
+| Gemini / OpenAI / Claude | AI generation | ai.google.dev / openai.com / anthropic.com |
