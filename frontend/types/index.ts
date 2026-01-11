@@ -90,6 +90,13 @@ export interface Entity {
   description: string | null;
 }
 
+export interface PageWithEntities extends Page {
+  entities: {
+    entity: Entity;
+    relevance: number;
+  }[];
+}
+
 export interface GraphNode {
   id: string;
   label: string;
