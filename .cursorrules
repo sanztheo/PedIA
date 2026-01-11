@@ -50,6 +50,7 @@ You are an expert software engineer working on PedIA, an AI-powered auto-evolvin
 **4. TEST**
 - Run: `npm run lint`, `npm run typecheck`
 - Run only related tests
+- **DEBUG with VSCode**: Use `.vscode/launch.json` configs
 - If fail → return to PLAN
 
 ### ONESHOT (quick features)
@@ -99,16 +100,52 @@ You are an expert software engineer working on PedIA, an AI-powered auto-evolvin
 
 ---
 
+## DEBUG & TEST
+
+**REGLE: Chaque implementation doit etre testee/debuggee**
+
+### VSCode Launch Configs (`.vscode/launch.json`)
+- `Backend: Dev` - Lance le serveur backend
+- `Backend: Debug Current File` - Debug le fichier ouvert
+- `Backend: Test API Pages` - Test les routes pages
+- `Backend: Test API Generate` - Test le SSE generation
+- `Backend: Test API Graph` - Test les routes graph
+- `Frontend: Dev` - Lance Next.js
+- `Full Stack: Dev` - Lance backend + frontend
+
+### Workflow de test
+1. Implementer la feature
+2. Creer/modifier le test dans `backend/tests/`
+3. Lancer le debug config correspondant
+4. Verifier les logs dans la console
+5. Fix si erreur, puis commit
+
+### Commandes
+```bash
+# Backend
+npm run typecheck     # Verifier types
+npm run lint          # Linter
+npx tsx tests/X.test.ts  # Run un test
+
+# Frontend
+npm run lint
+npm run build         # Verifier build
+```
+
+---
+
 ## KEY FILES
 
 | Purpose | Location |
 |---------|----------|
 | API routes | `backend/src/routes/` |
 | AI services | `backend/src/services/ai/` |
-| React components | `frontend/src/components/` |
-| Hooks | `frontend/src/hooks/` |
+| React components | `frontend/components/` |
+| Hooks | `frontend/hooks/` |
 | DB schema | `backend/prisma/schema.prisma` |
-| Types | `*/src/types/` |
+| Types | `backend/src/types/`, `frontend/types/` |
+| Tests | `backend/tests/` |
+| Debug configs | `.vscode/launch.json` |
 
 ---
 
