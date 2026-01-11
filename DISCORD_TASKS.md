@@ -15,134 +15,161 @@ pedia/
 
 ---
 
-## Dev 1 - Frontend Core + UI
+## Theo - Backend AI Pipeline
 
-**Focus:** Interface utilisateur principale
+**Focus:** Generation IA, streaming, extraction d'entites
 
-### Taches:
-- [ ] Page d'accueil avec barre de recherche centree
-- [ ] Layout principal avec sidebar navigation
-- [ ] Composant de rendu Markdown pour les pages
-- [ ] Integration Tailwind + theming (dark   mode)
-- [ ] Page de visualisation d'article (`/wiki/[slug]`)
+### Premiere tache: Pipeline de generation SSE
+
+Implementer le endpoint `/api/generate` qui:
+1. Recoit une query
+2. Lance une recherche web (Tavily/Serper)
+3. Genere le contenu avec Vercel AI SDK (Gemini/OpenAI/Claude)
+4. Stream les etapes en SSE vers le frontend
+5. Extrait les entites du contenu genere
 
 ### Fichiers a creer:
 ```
-frontend/
-├── components/
-│   ├── layout/
-│   │   ├── Sidebar.tsx
-│   │   ├── Header.tsx
-│   │   └── MainLayout.tsx
-│   ├── search/
-│   │   └── SearchBar.tsx
-│   └── wiki/
-│       └── MarkdownRenderer.tsx
-├── app/
-│   ├── page.tsx (homepage)
-│   └── wiki/[slug]/page.tsx
-└── lib/
-    └── api.ts
+backend/src/
+├── ai/
+│   ├── agent.ts              # PREMIER FICHIER - Orchestration AI
+│   ├── prompts.ts            # System prompts
+│   └── tools/
+│       ├── search.tool.ts    # Tool recherche web
+│       └── entity.tool.ts    # Tool extraction entites
+├── services/
+│   ├── generation.service.ts
+│   ├── websearch.service.ts
+│   └── ner.service.ts
+└── routes/
+    └── generate.ts           # Completer le SSE streaming
+```
+
+### Pour commencer:
+```bash
+cd backend
+npm install ai @ai-sdk/google @ai-sdk/openai
+# Puis creer src/ai/agent.ts
 ```
 
 ---
 
-## Dev 2 - Frontend Streaming + Graph
+## Nixou - Backend API + Database
 
-**Focus:** Features avancees frontend
+**Focus:** API REST, services, base de donnees
 
-### Taches:
-- [ ] Composant de progression SSE (etapes de generation)
-- [ ] Integration react-force-graph pour le graphe
-- [ ] Panel de graphe dans la sidebar
-- [ ] Page "Toutes les pages" avec liste/grille
-- [ ] Gestion des etats de chargement
+### Premiere tache: Services CRUD Pages
+
+Implementer les services de base pour les pages:
+1. PageService - CRUD complet
+2. EntityService - gestion des entites
+3. Routes pages fonctionnelles
+4. Integration Prisma
+
+### Fichiers a creer:
+```
+backend/src/
+├── lib/
+│   ├── prisma.ts             # PREMIER FICHIER - Client Prisma
+│   └── redis.ts              # Client Redis (cache)
+├── services/
+│   ├── page.service.ts       # CRUD pages
+│   ├── entity.service.ts     # CRUD entites
+│   └── graph.service.ts      # Relations graph
+└── routes/
+    ├── pages.ts              # Completer les routes
+    ├── graph.ts              # Completer les routes
+    └── search.ts             # Completer les routes
+```
+
+### Pour commencer:
+```bash
+cd backend
+# Creer src/lib/prisma.ts avec le client
+# Puis src/services/page.service.ts
+```
+
+---
+
+## Mirochill - Frontend Streaming + Graph
+
+**Focus:** SSE streaming UI, visualisation graphe
+
+### Premiere tache: Composant de progression SSE
+
+Implementer l'UI de progression quand l'AI genere:
+1. Hook useSSE pour ecouter les events
+2. Composant GenerationProgress avec les etapes
+3. Animations de chargement
+4. Integration avec la page de recherche
 
 ### Fichiers a creer:
 ```
 frontend/
+├── hooks/
+│   └── useSSE.ts             # PREMIER FICHIER - Hook SSE
+├── lib/
+│   └── sse.ts                # Client SSE
 ├── components/
 │   ├── generation/
 │   │   ├── GenerationProgress.tsx
 │   │   └── StepIndicator.tsx
 │   └── graph/
 │       ├── GraphView.tsx
-│       ├── GraphSidebar.tsx
-│       └── GraphControls.tsx
+│       └── GraphSidebar.tsx
+└── app/
+    └── search/
+        └── page.tsx          # Page de recherche avec progress
+```
+
+### Pour commencer:
+```bash
+cd frontend
+npm install eventsource-parser
+# Puis creer hooks/useSSE.ts
+```
+
+---
+
+## Glamgar - Frontend Core + UI
+
+**Focus:** Interface utilisateur, composants de base
+
+### Premiere tache: Homepage + Layout
+
+Implementer la structure de base:
+1. Homepage avec recherche centree (style Google)
+2. Layout principal avec sidebar
+3. Composants de base (SearchBar, Header)
+4. Setup Tailwind avec dark mode
+
+### Fichiers a creer:
+```
+frontend/
+├── components/
+│   ├── layout/
+│   │   ├── MainLayout.tsx    # PREMIER FICHIER - Layout principal
+│   │   ├── Sidebar.tsx
+│   │   └── Header.tsx
+│   ├── search/
+│   │   └── SearchBar.tsx
+│   └── ui/
+│       └── Button.tsx
 ├── app/
-│   └── pages/page.tsx
-├── hooks/
-│   ├── useSSE.ts
-│   └── useGraph.ts
+│   ├── page.tsx              # Homepage (modifier)
+│   ├── layout.tsx            # Root layout (modifier)
+│   └── wiki/
+│       └── [slug]/
+│           └── page.tsx
 └── lib/
-    └── sse.ts
+    └── api.ts                # Client API
 ```
 
----
-
-## Dev 3 - Backend API + Database
-
-**Focus:** API REST et base de donnees
-
-### Taches:
-- [ ] Setup Prisma + migrations
-- [ ] Routes CRUD pages (`/api/pages`)
-- [ ] Routes graphe (`/api/graph`)
-- [ ] Routes recherche (`/api/search`)
-- [ ] Integration Qdrant pour embeddings
-- [ ] Services de base (PageService, EntityService)
-
-### Fichiers a creer:
-```
-backend/
-├── src/
-│   ├── services/
-│   │   ├── page.service.ts
-│   │   ├── entity.service.ts
-│   │   ├── graph.service.ts
-│   │   └── search.service.ts
-│   ├── lib/
-│   │   ├── prisma.ts
-│   │   ├── qdrant.ts
-│   │   └── redis.ts
-│   └── routes/
-│       └── (completer les routes existantes)
-└── prisma/
-    └── (migrations)
-```
-
----
-
-## Dev 4 - Backend AI Pipeline
-
-**Focus:** Generation IA et extraction d'entites
-
-### Taches:
-- [ ] Pipeline de generation de page (SSE streaming)
-- [ ] Integration AI via Vercel AI SDK (Gemini/OpenAI/Claude)
-- [ ] Extraction d'entites (NER)
-- [ ] Recherche web (Brave/Serper/Tavily)
-- [ ] Jobs BullMQ pour generation async
-- [ ] Tools IA pour modification de zones
-
-### Fichiers a creer:
-```
-backend/
-├── src/
-│   ├── ai/
-│   │   ├── agent.ts
-│   │   ├── prompts.ts
-│   │   └── tools/
-│   │       ├── search.tool.ts
-│   │       ├── entity.tool.ts
-│   │       └── zone.tool.ts
-│   ├── services/
-│   │   ├── generation.service.ts
-│   │   ├── websearch.service.ts
-│   │   └── ner.service.ts
-│   └── jobs/
-│       ├── queue.ts
-│       └── generation.job.ts
+### Pour commencer:
+```bash
+cd frontend
+# Modifier app/page.tsx pour la homepage
+# Puis creer components/layout/MainLayout.tsx
 ```
 
 ---
@@ -157,9 +184,8 @@ cd pedia
 # Backend
 cd backend
 cp .env.example .env
+# Remplir .env avec tes cles
 npm install
-npm run db:generate
-npm run db:push
 npm run dev
 
 # Frontend (autre terminal)
@@ -177,18 +203,52 @@ npm run dev
 |-------|------|
 | Frontend | Next.js 15, Tailwind, SWR, react-force-graph |
 | Backend | Hono, Prisma, BullMQ, Vercel AI SDK |
-| Database | PostgreSQL, Qdrant, Redis |
+| Database | PostgreSQL (pgvector), Redis |
 | AI | Gemini / OpenAI / Claude (au choix) |
+| Embeddings | text-embedding-3-small (OpenAI) |
 
 ---
 
-## Priorites
+## Ordre des Priorites
 
-1. **Semaine 1:** Homepage + API pages de base + schema DB
-2. **Semaine 2:** Generation IA + SSE streaming
-3. **Semaine 3:** Graphe + extraction entites
-4. **Semaine 4:** Polish + optimisations
+### Sprint 1 - Fondations
+1. **Glamgar** - Homepage + Layout + SearchBar
+2. **Nixou** - Prisma client + PageService + routes pages
+3. **Mirochill** - Hook useSSE + GenerationProgress basique
+4. **Theo** - Agent AI + generation SSE basique
+
+### Sprint 2 - Core Features
+1. **Glamgar** - Page wiki/[slug] + MarkdownRenderer
+2. **Nixou** - EntityService + GraphService + routes graph
+3. **Mirochill** - GraphView avec react-force-graph
+4. **Theo** - Extraction entites + web search integration
+
+### Sprint 3 - Polish
+1. **Glamgar** - Dark mode + animations + responsive
+2. **Nixou** - Cache Redis + optimisations queries
+3. **Mirochill** - GraphSidebar + interactions graph
+4. **Theo** - BullMQ jobs + enrichissement auto
 
 ---
 
-Questions? Ping dans le channel dev
+## Communication
+
+- Ping dans le channel dev si bloque
+- PR reviews entre vous
+- Daily standup rapide (5min max)
+
+---
+
+## Liens Utiles
+
+| Doc | Lien |
+|-----|------|
+| Vercel AI SDK | https://sdk.vercel.ai/docs |
+| Hono | https://hono.dev |
+| Prisma | https://prisma.io/docs |
+| react-force-graph | https://github.com/vasturiano/react-force-graph |
+| Tailwind | https://tailwindcss.com/docs |
+
+---
+
+Let's go!
