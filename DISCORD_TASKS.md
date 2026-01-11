@@ -3,7 +3,7 @@
 ## IMPORTANT POUR LES IA
 
 **AVANT DE CODER, LIS:**
-1. `.cursorrules` - Regles du projet
+1. `.cursorrules` - regles du projet
 2. `docs/architecture/` - Architecture technique
 3. Ce fichier - Ta mission specifique
 
@@ -35,14 +35,12 @@ pedia/
 
 ---
 
-## Kofu - Full Backend (Services + Routes + Workers)
+## Kofu - Backend Services + Routes
 
 ### MISSION
-Implementer tous les services backend, routes API et workers BullMQ.
+Implementer les services CRUD et routes API.
 
 ### TACHES A FAIRE (dans l'ordre)
-
-**Phase 1: Services**
 
 **Tache 1: PageService**
 - Fichier: `backend/src/services/page.service.ts`
@@ -57,8 +55,6 @@ Implementer tous les services backend, routes API et workers BullMQ.
 - Fichier: `backend/src/services/graph.service.ts`
 - Fonctions: getFullGraph, getLocalGraph, getEntityRelations
 
-**Phase 2: Routes**
-
 **Tache 4: Routes pages.ts**
 - Fichier: `backend/src/routes/pages.ts`
 - GET /api/pages, GET /api/pages/:slug, POST, PATCH, DELETE
@@ -71,31 +67,10 @@ Implementer tous les services backend, routes API et workers BullMQ.
 - Fichier: `backend/src/routes/search.ts`
 - GET /api/search?q=... avec full-text Prisma
 
-**Phase 3: Queue Workers**
-
-**Tache 7: Queue Setup**
-- Fichier: `backend/src/queue/queues.ts`
-- Creer les queues: extract, link, enrich
-- Utiliser BullMQ + Redis
-
-**Tache 8: Extract Worker**
-- Fichier: `backend/src/queue/workers/extractWorker.ts`
-- Extraction entites apres generation
-
-**Tache 9: Link Worker**
-- Fichier: `backend/src/queue/workers/linkWorker.ts`
-- Deduplication + creation relations
-
-**Tache 10: Enrich Worker**
-- Fichier: `backend/src/queue/workers/enrichWorker.ts`
-- Generation pages manquantes
-
 ### FICHIERS A UTILISER
 ```
-backend/src/lib/prisma.ts         # import prisma from "../lib/prisma"
-backend/src/lib/redis.ts          # import { getCache, setCache } from "../lib/redis"
-backend/src/ai/agent.ts           # import { generatePage } from "../ai/agent"
-backend/src/ai/tools/entity.tool.ts
+backend/src/lib/prisma.ts
+backend/src/lib/redis.ts
 backend/src/types/index.ts
 ```
 
@@ -104,24 +79,61 @@ backend/src/types/index.ts
 npm run typecheck
 npx tsx tests/pages.test.ts
 npx tsx tests/graph.test.ts
-npx tsx tests/queue.test.ts
 ```
-
-### DOCS A LIRE
-- `docs/architecture/backend.md`
-- `docs/architecture/database.md`
-- `backend/prisma/schema.prisma`
 
 ---
 
-## Glamgar - Full Frontend (UI + Wiki)
+## Nixou - Queue Workers
 
 ### MISSION
-Implementer toute l'interface: layout, homepage, wiki display, composants.
+Implementer le systeme de queues BullMQ pour le traitement async.
 
 ### TACHES A FAIRE (dans l'ordre)
 
-**Phase 1: Layout & Navigation**
+**Tache 1: Queue Setup**
+- Fichier: `backend/src/queue/queues.ts`
+- Creer les queues: extract, link, enrich
+- Utiliser BullMQ + Redis
+
+**Tache 2: Extract Worker**
+- Fichier: `backend/src/queue/workers/extractWorker.ts`
+- Extraction entites apres generation
+- Utiliser: `import { extractEntities } from "../../ai/tools/entity.tool"`
+
+**Tache 3: Link Worker**
+- Fichier: `backend/src/queue/workers/linkWorker.ts`
+- Deduplication des entites
+- Creation des relations entre entites
+
+**Tache 4: Enrich Worker**
+- Fichier: `backend/src/queue/workers/enrichWorker.ts`
+- Creer les pages manquantes pour entites importantes
+- Utiliser: `import { generatePage } from "../../ai/agent"`
+
+### FICHIERS A UTILISER
+```
+backend/src/lib/prisma.ts
+backend/src/lib/redis.ts
+backend/src/ai/agent.ts
+backend/src/ai/tools/entity.tool.ts
+```
+
+### TESTS
+```bash
+npm run typecheck
+npx tsx tests/queue.test.ts
+```
+
+---
+
+## Glamgar - Full Frontend
+
+### MISSION
+Implementer toute l'interface: layout, homepage, wiki display.
+
+### TACHES A FAIRE (dans l'ordre)
+
+**Phase 1: Layout**
 
 **Tache 1: MainLayout**
 - Fichier: `frontend/components/layout/MainLayout.tsx`
@@ -149,7 +161,7 @@ Implementer toute l'interface: layout, homepage, wiki display, composants.
 - Fichier: `frontend/app/layout.tsx`
 - Integrer MainLayout + dark mode
 
-**Phase 3: Wiki Display**
+**Phase 3: Wiki**
 
 **Tache 7: Wiki Page**
 - Fichier: `frontend/app/wiki/[slug]/page.tsx`
@@ -169,23 +181,18 @@ Implementer toute l'interface: layout, homepage, wiki display, composants.
 
 ### FICHIERS A UTILISER
 ```
-frontend/lib/api.ts               # import { api } from "@/lib/api"
-frontend/hooks/useSSE.ts          # import { useSSE } from "@/hooks/useSSE"
+frontend/lib/api.ts
+frontend/hooks/useSSE.ts
 frontend/types/index.ts
-frontend/components/graph/GraphView.tsx   # deja fait
-frontend/components/generation/GenerationProgress.tsx  # deja fait
+frontend/components/graph/GraphView.tsx
+frontend/components/generation/GenerationProgress.tsx
 ```
 
 ### TESTS
 ```bash
 npm run lint
 npm run build
-npm run typecheck
 ```
-
-### DOCS A LIRE
-- `docs/architecture/frontend.md`
-- `docs/features/streaming-ui.md`
 
 ---
 
@@ -203,7 +210,7 @@ npm run typecheck
 ## Regles
 
 1. **Lire `.cursorrules` avant de coder**
-2. **Utiliser les fichiers existants** (prisma.ts, api.ts, etc.)
+2. **Utiliser les fichiers existants**
 3. **Tester apres chaque implementation**
 4. **Pas de comments inutiles**
 5. **Noms clairs > comments**
