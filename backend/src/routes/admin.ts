@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context, Next } from "hono";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { HonoAdapter } from "@bull-board/hono";
@@ -8,10 +9,7 @@ import { extractQueue, linkQueue, enrichQueue } from "../queue/queues";
 const admin = new Hono();
 
 // Middleware d'authentification pour /admin/*
-const authMiddleware = async (
-  c: { req: { header: (name: string) => string | undefined; query: (name: string) => string | undefined }; json: (body: unknown, status?: number) => Response },
-  next: () => Promise<void>
-) => {
+const authMiddleware = async (c: Context, next: Next) => {
   const adminSecret = process.env.ADMIN_SECRET;
 
   // Si pas de secret configuré, bloquer l'accès
@@ -49,6 +47,7 @@ if (queues.length > 0) {
 
 // Route Bull Board UI (avec auth)
 const bullBoardApp = serverAdapter.registerPlugin();
+admin.use("/queues", authMiddleware);
 admin.use("/queues/*", authMiddleware);
 admin.route("/queues", bullBoardApp);
 
