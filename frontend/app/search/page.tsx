@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useSSE } from "@/hooks/useSSE";
 import { GenerationProgress } from "@/components/generation/GenerationProgress";
 import { Loader2 } from "lucide-react";
@@ -125,11 +126,14 @@ function Header() {
   return (
     <header className="border-b border-border">
       <div className="max-w-screen-lg mx-auto px-6 h-14 flex items-center justify-between">
-        <Link
-          href="/"
-          className="text-sm font-medium hover:text-muted-foreground transition-colors"
-        >
-          PedIA
+        <Link href="/" className="hover:opacity-70 transition-opacity">
+          <Image
+            src="/logo/logo_no_bg.svg"
+            alt="PedIA"
+            width={28}
+            height={28}
+            className="opacity-90"
+          />
         </Link>
         <nav className="flex items-center gap-6">
           <Link

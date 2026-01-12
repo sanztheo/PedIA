@@ -1,5 +1,6 @@
 import { SearchBar } from "@/components/search/SearchBar";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -7,7 +8,13 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-border">
         <div className="max-w-screen-lg mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="text-sm font-medium">PedIA</span>
+          <Image
+            src="/logo/logo_no_bg.svg"
+            alt="PedIA"
+            width={28}
+            height={28}
+            className="opacity-90"
+          />
           <nav className="flex items-center gap-6">
             <Link
               href="/explore"
