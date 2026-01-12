@@ -20,10 +20,13 @@ export default async function WikiPage({ params }: WikiPageProps) {
   if (response.error || !response.data) {
     return (
       <MainLayout>
-        <div className="flex flex-col items-center justify-center min-h-[50vh] px-6">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold">Page introuvable</h1>
-            <p className="text-muted-foreground">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-8">
+          <div className="text-center space-y-6">
+            <div className="size-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🔍</span>
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight">Page introuvable</h1>
+            <p className="text-muted-foreground text-lg max-w-md">
               {response.error || 'La page demandée n\'a pas pu être chargée.'}
             </p>
           </div>
@@ -38,6 +41,7 @@ export default async function WikiPage({ params }: WikiPageProps) {
   return (
     <MainLayout disableScroll={true}>
       <div className="flex flex-1 overflow-hidden h-full">
+        {/* Main content area - full width style like Vercel */}
         <div className="flex-1 overflow-y-auto min-w-0">
           <PageHeader
             title={page.title}
@@ -47,15 +51,17 @@ export default async function WikiPage({ params }: WikiPageProps) {
             status={page.status}
             pageId={page.id}
           />
-          <div className="max-w-4xl mx-auto px-6 py-8">
+          
+          {/* Content - generous padding, no restrictive max-width */}
+          <div className="px-8 lg:px-12 py-10 lg:py-14">
             <MarkdownContent content={page.content} />
           </div>
         </div>
 
         {/* Right Sidebar for Entities */}
-        <div className="hidden xl:block w-80 border-l overflow-y-auto">
+        <aside className="hidden xl:block w-80 border-l border-border/50 overflow-y-auto bg-muted/5">
           <EntitySidebar entities={entities} />
-        </div>
+        </aside>
       </div>
     </MainLayout>
   );

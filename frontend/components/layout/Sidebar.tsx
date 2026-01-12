@@ -22,7 +22,7 @@ export function Sidebar() {
           api.graph.full({ limit: 20 }),
         ]);
 
-        if (pagesRes.data) {
+        if (pagesRes.data?.data) {
           setPages(pagesRes.data.data);
         }
 

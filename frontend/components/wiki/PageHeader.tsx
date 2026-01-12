@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Network } from 'lucide-react';
+import { Network, Eye, Clock, CalendarDays } from 'lucide-react';
 import { PageStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -17,22 +17,26 @@ interface PageHeaderProps {
   pageId?: string;
 }
 
-const statusConfig: Record<PageStatus, { label: string; className: string }> = {
+const statusConfig: Record<PageStatus, { label: string; className: string; dot: string }> = {
   PUBLISHED: {
     label: 'Publié',
-    className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    className: 'text-green-400',
+    dot: 'bg-green-400',
   },
   DRAFT: {
     label: 'Brouillon',
-    className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    className: 'text-yellow-400',
+    dot: 'bg-yellow-400',
   },
   GENERATING: {
     label: 'En génération',
-    className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    className: 'text-blue-400',
+    dot: 'bg-blue-400 animate-pulse',
   },
   ERROR: {
     label: 'Erreur',
-    className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+    className: 'text-red-400',
+    dot: 'bg-red-400',
   },
 };
 
@@ -49,60 +53,64 @@ export function PageHeader({
   const updatedDate = new Date(updatedAt);
 
   return (
-    <div className="border-b bg-gradient-to-b from-background to-muted/30 py-8 px-6 sm:px-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-4 flex items-center justify-between">
-          <span
-            className={cn(
-              'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold',
-              statusInfo.className
-            )}
-          >
-            {statusInfo.label}
-          </span>
+    <header className="relative border-b border-border/50">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-muted/20 to-transparent pointer-events-none" />
+      
+      <div className="relative px-8 lg:px-12 py-10 lg:py-14">
+        {/* Top bar with status and actions */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-2">
+            <span className={cn('size-2 rounded-full', statusInfo.dot)} />
+            <span className={cn('text-sm font-medium', statusInfo.className)}>
+              {statusInfo.label}
+            </span>
+          </div>
 
           {pageId && (
-            <Button variant="outline" size="sm" asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground hover:text-foreground gap-2"
+              asChild
+            >
               <Link href={`/explore?page=${pageId}`}>
                 <Network className="size-4" />
-                <span className="hidden sm:inline">Voir le graph</span>
+                <span className="hidden sm:inline">Graphe</span>
               </Link>
             </Button>
           )}
         </div>
 
-        <h1 className="mb-6 text-4xl font-bold leading-tight">
+        {/* Title */}
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-8 text-foreground">
           {title}
         </h1>
 
-        <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+        {/* Meta information */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span className="font-medium">Créé</span>
-            <time dateTime={createdDate.toISOString()}>
+            <CalendarDays className="size-4 text-muted-foreground/60" />
+            <span>Créé</span>
+            <time dateTime={createdDate.toISOString()} className="text-foreground/70">
               {formatDistanceToNow(createdDate, { addSuffix: true, locale: fr })}
             </time>
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
-            <span className="font-medium">Modifié</span>
-            <time dateTime={updatedDate.toISOString()}>
+            <Clock className="size-4 text-muted-foreground/60" />
+            <span>Modifié</span>
+            <time dateTime={updatedDate.toISOString()} className="text-foreground/70">
               {formatDistanceToNow(updatedDate, { addSuffix: true, locale: fr })}
             </time>
           </div>
 
           <div className="flex items-center gap-2">
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path
-                fillRule="evenodd"
-                d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>{viewCount.toLocaleString('fr-FR')} vues</span>
+            <Eye className="size-4 text-muted-foreground/60" />
+            <span className="text-foreground/70">{viewCount.toLocaleString('fr-FR')} vues</span>
           </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

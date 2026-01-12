@@ -1,13 +1,22 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
-import type { GraphData, GraphNode, GraphLink } from "@/types";
+import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from "react";
+import type { GraphData, GraphNode, GraphLink, EntityType } from "@/types";
 
 interface GraphViewProps {
   data: GraphData;
   width?: number;
   height?: number;
+  filters?: EntityType[];
+  highlightedId?: string;
   onNodeClick?: (node: GraphNode) => void;
+}
+
+export interface GraphViewRef {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  reset: () => void;
+  centerOn: (nodeId: string) => void;
 }
 
 const NODE_COLORS: Record<string, string> = {
@@ -36,15 +45,21 @@ interface SimLink extends GraphLink {
 function initializeNodes(
   data: GraphData,
   width: number,
-  height: number,
+  height: number
 ): SimNode[] {
-  return data.nodes.map((node) => ({
-    ...node,
-    x: Math.random() * width,
-    y: Math.random() * height,
-    vx: 0,
-    vy: 0,
-  }));
+  const centerX = width / 2;
+  const centerY = height / 2;
+  return data.nodes.map((node, i) => {
+    const angle = (2 * Math.PI * i) / data.nodes.length;
+    const radius = Math.min(width, height) / 4;
+    return {
+      ...node,
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle),
+      vx: 0,
+      vy: 0,
+    };
+  });
 }
 
 function initializeLinks(data: GraphData, nodes: SimNode[]): SimLink[] {
@@ -59,18 +74,36 @@ function initializeLinks(data: GraphData, nodes: SimNode[]): SimLink[] {
     .filter((link): link is SimLink => link !== null);
 }
 
-export function GraphView({
-  data,
-  width = 800,
-  height = 600,
-  onNodeClick,
-}: GraphViewProps) {
+export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function GraphView(
+  { data, width = 800, height = 600, filters, highlightedId, onNodeClick },
+  ref
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
-
   const nodesRef = useRef<SimNode[]>([]);
   const linksRef = useRef<SimLink[]>([]);
   const dragRef = useRef<SimNode | null>(null);
+  
+  const scaleRef = useRef(1);
+  const offsetRef = useRef({ x: 0, y: 0 });
+  const isDraggingCanvas = useRef(false);
+  const lastMousePos = useRef({ x: 0, y: 0 });
+
+  const getFilteredData = useCallback(() => {
+    if (!filters || filters.length === 0) {
+      return { nodes: nodesRef.current, links: linksRef.current };
+    }
+
+    const filteredNodes = nodesRef.current.filter(
+      (node) => node.type === "page" || (node.entityType && filters.includes(node.entityType))
+    );
+    const nodeIds = new Set(filteredNodes.map((n) => n.id));
+    const filteredLinks = linksRef.current.filter(
+      (link) => nodeIds.has(link.sourceNode.id) && nodeIds.has(link.targetNode.id)
+    );
+
+    return { nodes: filteredNodes, links: filteredLinks };
+  }, [filters]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -78,13 +111,18 @@ export function GraphView({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, width, height);
+    const scale = scaleRef.current;
+    const offset = offsetRef.current;
 
-    const currentNodes = nodesRef.current;
-    const currentLinks = linksRef.current;
+    ctx.clearRect(0, 0, width, height);
+    ctx.save();
+    ctx.translate(offset.x, offset.y);
+    ctx.scale(scale, scale);
+
+    const { nodes: currentNodes, links: currentLinks } = getFilteredData();
 
     ctx.strokeStyle = "#e5e7eb";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1 / scale;
     for (const link of currentLinks) {
       ctx.beginPath();
       ctx.moveTo(link.sourceNode.x, link.sourceNode.y);
@@ -98,20 +136,32 @@ export function GraphView({
           ? NODE_COLORS.page
           : NODE_COLORS[node.entityType || "OTHER"];
       const radius = node.type === "page" ? 12 : 8;
+      const isHighlighted = highlightedId === node.id;
+
+      if (isHighlighted) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, radius + 4, 0, Math.PI * 2);
+        ctx.fillStyle = `${color}40`;
+        ctx.fill();
+      }
 
       ctx.beginPath();
       ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
 
-      ctx.font = "10px sans-serif";
-      ctx.fillStyle = document.documentElement.classList.contains("dark")
-        ? "#d1d5db"
-        : "#374151";
-      ctx.textAlign = "center";
-      ctx.fillText(node.label, node.x, node.y + radius + 12);
+      if (scale > 0.5) {
+        ctx.font = `${10 / scale}px sans-serif`;
+        ctx.fillStyle = document.documentElement.classList.contains("dark")
+          ? "#d1d5db"
+          : "#374151";
+        ctx.textAlign = "center";
+        ctx.fillText(node.label, node.x, node.y + radius + 12 / scale);
+      }
     }
-  }, [width, height]);
+
+    ctx.restore();
+  }, [width, height, getFilteredData, highlightedId]);
 
   useEffect(() => {
     if (data.nodes.length === 0) {
@@ -123,6 +173,9 @@ export function GraphView({
     const newNodes = initializeNodes(data, width, height);
     nodesRef.current = newNodes;
     linksRef.current = initializeLinks(data, newNodes);
+
+    scaleRef.current = 1;
+    offsetRef.current = { x: 0, y: 0 };
 
     draw();
   }, [data, width, height, draw]);
@@ -191,7 +244,6 @@ export function GraphView({
       }
 
       draw();
-
       animationRef.current = requestAnimationFrame(simulate);
     };
 
@@ -204,12 +256,23 @@ export function GraphView({
     };
   }, [data, width, height, draw]);
 
+  const screenToWorld = useCallback((screenX: number, screenY: number) => {
+    const scale = scaleRef.current;
+    const offset = offsetRef.current;
+    return {
+      x: (screenX - offset.x) / scale,
+      y: (screenY - offset.y) / scale,
+    };
+  }, []);
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      const { x, y } = screenToWorld(screenX, screenY);
 
       for (const node of nodesRef.current) {
         const dx = x - node.x;
@@ -219,34 +282,75 @@ export function GraphView({
           return;
         }
       }
+
+      isDraggingCanvas.current = true;
+      lastMousePos.current = { x: screenX, y: screenY };
     },
-    [],
+    [screenToWorld]
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!dragRef.current) return;
-
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
 
-      dragRef.current.x = e.clientX - rect.left;
-      dragRef.current.y = e.clientY - rect.top;
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+
+      if (dragRef.current) {
+        const { x, y } = screenToWorld(screenX, screenY);
+        dragRef.current.x = x;
+        dragRef.current.y = y;
+      } else if (isDraggingCanvas.current) {
+        const dx = screenX - lastMousePos.current.x;
+        const dy = screenY - lastMousePos.current.y;
+        offsetRef.current.x += dx;
+        offsetRef.current.y += dy;
+        lastMousePos.current = { x: screenX, y: screenY };
+        draw();
+      }
     },
-    [],
+    [screenToWorld, draw]
   );
 
   const handleMouseUp = useCallback(() => {
     dragRef.current = null;
+    isDraggingCanvas.current = false;
   }, []);
+
+  const handleWheel = useCallback(
+    (e: React.WheelEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+      const newScale = Math.max(0.1, Math.min(5, scaleRef.current * zoomFactor));
+
+      const worldX = (mouseX - offsetRef.current.x) / scaleRef.current;
+      const worldY = (mouseY - offsetRef.current.y) / scaleRef.current;
+
+      offsetRef.current.x = mouseX - worldX * newScale;
+      offsetRef.current.y = mouseY - worldY * newScale;
+      scaleRef.current = newScale;
+
+      draw();
+    },
+    [draw]
+  );
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!onNodeClick) return;
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      const { x, y } = screenToWorld(screenX, screenY);
 
       for (const node of nodesRef.current) {
         const dx = x - node.x;
@@ -257,16 +361,42 @@ export function GraphView({
         }
       }
     },
-    [onNodeClick],
+    [onNodeClick, screenToWorld]
   );
+
+  useImperativeHandle(ref, () => ({
+    zoomIn: () => {
+      scaleRef.current = Math.min(5, scaleRef.current * 1.2);
+      draw();
+    },
+    zoomOut: () => {
+      scaleRef.current = Math.max(0.1, scaleRef.current * 0.8);
+      draw();
+    },
+    reset: () => {
+      scaleRef.current = 1;
+      offsetRef.current = { x: 0, y: 0 };
+      draw();
+    },
+    centerOn: (nodeId: string) => {
+      const node = nodesRef.current.find((n) => n.id === nodeId);
+      if (node) {
+        offsetRef.current = {
+          x: width / 2 - node.x * scaleRef.current,
+          y: height / 2 - node.y * scaleRef.current,
+        };
+        draw();
+      }
+    },
+  }), [draw, width, height]);
 
   if (data.nodes.length === 0) {
     return (
       <div
-        className="flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg"
+        className="flex items-center justify-center bg-muted/30 rounded-lg"
         style={{ width, height }}
       >
-        <p className="text-gray-500 dark:text-gray-400">Aucune donnée</p>
+        <p className="text-muted-foreground">Aucune donnée</p>
       </div>
     );
   }
@@ -276,14 +406,15 @@ export function GraphView({
       ref={canvasRef}
       width={width}
       height={height}
-      className="rounded-lg bg-white dark:bg-gray-800 cursor-grab active:cursor-grabbing"
+      className="rounded-lg bg-background cursor-grab active:cursor-grabbing"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onClick={handleClick}
+      onWheel={handleWheel}
     />
   );
-}
+});
 
 export default GraphView;

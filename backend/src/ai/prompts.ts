@@ -11,7 +11,8 @@ export const SYSTEM_PROMPTS = {
 
 ## FORMAT DE SORTIE
 
-\`\`\`markdown
+Écris directement en markdown SANS entourer le contenu de backticks. Voici la structure attendue:
+
 # {Titre}
 
 {Introduction de 2-3 phrases résumant le sujet}
@@ -32,7 +33,8 @@ export const SYSTEM_PROMPTS = {
 
 - [[Entité liée 1]]
 - [[Entité liée 2]]
-\`\`\`
+
+IMPORTANT: N'entoure JAMAIS ta réponse de \`\`\`markdown ou \`\`\`. Écris le markdown directement.
 
 ## INSTRUCTIONS
 
