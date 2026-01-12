@@ -9,6 +9,7 @@ export function createSSEConnection(
 ): () => void {
   const eventSource = new EventSource(url);
 
+  // Handle generic messages (fallback)
   eventSource.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data) as SSEEvent;
@@ -18,12 +19,31 @@ export function createSSEConnection(
     }
   };
 
+  // Handle named events from server
   eventSource.addEventListener("step", (event) => {
     try {
       const data = JSON.parse((event as MessageEvent).data) as SSEEvent;
       onEvent(data);
     } catch {
       console.error("Failed to parse step event");
+    }
+  });
+
+  eventSource.addEventListener("content", (event) => {
+    try {
+      const data = JSON.parse((event as MessageEvent).data) as SSEEvent;
+      onEvent(data);
+    } catch {
+      console.error("Failed to parse content event");
+    }
+  });
+
+  eventSource.addEventListener("entity", (event) => {
+    try {
+      const data = JSON.parse((event as MessageEvent).data) as SSEEvent;
+      onEvent(data);
+    } catch {
+      console.error("Failed to parse entity event");
     }
   });
 
@@ -37,19 +57,32 @@ export function createSSEConnection(
     }
   });
 
+  // Handle server-sent error events (named "error" events from server)
+  // This is different from connection errors (handled by onerror)
   eventSource.addEventListener("error", (event) => {
-    try {
-      const data = JSON.parse((event as MessageEvent).data) as SSEEvent;
-      onEvent(data);
-    } catch {
-      onError?.(new Error("SSE connection error"));
+    // Check if this is a MessageEvent with data (server-sent error)
+    const messageEvent = event as MessageEvent;
+    if (messageEvent.data) {
+      try {
+        const data = JSON.parse(messageEvent.data) as SSEEvent;
+        onEvent(data);
+      } catch {
+        console.error("Failed to parse server error event");
+      }
     }
     eventSource.close();
   });
 
-  eventSource.onerror = () => {
-    onError?.(new Error("SSE connection failed"));
-    eventSource.close();
+  // Handle connection errors (network issues, server unavailable, etc.)
+  eventSource.onerror = (event) => {
+    // Only trigger error callback if connection is truly failed
+    // EventSource.CLOSED = 2, EventSource.CONNECTING = 0
+    if (eventSource.readyState === EventSource.CLOSED) {
+      onError?.(new Error("SSE connection failed"));
+    } else if (eventSource.readyState === EventSource.CONNECTING) {
+      // Connection is attempting to reconnect, don't error yet
+      console.warn("SSE connection interrupted, attempting to reconnect...");
+    }
   };
 
   return () => eventSource.close();
