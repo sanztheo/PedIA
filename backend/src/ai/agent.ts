@@ -1,4 +1,4 @@
-import { streamText, generateText, type LanguageModelV1 } from "ai";
+import { streamText, generateText, type LanguageModel } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -7,12 +7,8 @@ import {
   buildGenerationPrompt,
   buildExtractionPrompt,
 } from "./prompts";
-import { createSearchTool, webSearch } from "./tools/search.tool";
-import {
-  createEntityTool,
-  extractEntities,
-  type ExtractedEntity,
-} from "./tools/entity.tool";
+import { webSearch } from "./tools/search.tool";
+import { extractEntities, type ExtractedEntity } from "./tools/entity.tool";
 import type { EntityType } from "@prisma/client";
 
 export type AIProvider = "google" | "anthropic" | "openai";
@@ -43,16 +39,18 @@ export interface SSEEmitter {
   error: (message: string) => Promise<void>;
 }
 
-function getModel(provider: AIProvider = "google"): LanguageModelV1 {
+function getModel(provider: AIProvider = "google"): LanguageModel {
   switch (provider) {
     case "google": {
-      if (!process.env.GOOGLE_AI_API_KEY) {
-        throw new Error("GOOGLE_AI_API_KEY environment variable is not set");
+      if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+        throw new Error(
+          "GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set",
+        );
       }
       const google = createGoogleGenerativeAI({
-        apiKey: process.env.GOOGLE_AI_API_KEY,
+        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
       });
-      return google("gemini-2.0-flash") as unknown as LanguageModelV1;
+      return google("gemini-2.0-flash");
     }
     case "anthropic": {
       if (!process.env.ANTHROPIC_API_KEY) {
@@ -61,9 +59,7 @@ function getModel(provider: AIProvider = "google"): LanguageModelV1 {
       const anthropic = createAnthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
       });
-      return anthropic(
-        "claude-sonnet-4-20250514",
-      ) as unknown as LanguageModelV1;
+      return anthropic("claude-sonnet-4-20250514");
     }
     case "openai": {
       if (!process.env.OPENAI_API_KEY) {
@@ -72,7 +68,7 @@ function getModel(provider: AIProvider = "google"): LanguageModelV1 {
       const openai = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY,
       });
-      return openai("gpt-4o") as unknown as LanguageModelV1;
+      return openai("gpt-4o");
     }
     default:
       throw new Error(`Unknown provider: ${provider}`);
@@ -141,7 +137,7 @@ export async function generatePage(
     model,
     system: getSystemPrompt("generate"),
     messages: [{ role: "user", content: userPrompt }],
-    maxTokens,
+    maxOutputTokens: maxTokens,
   });
 
   // Consume stream via async iteration - this fully consumes the textStream
@@ -184,7 +180,7 @@ export async function extractEntitiesWithAI(
     model,
     system: getSystemPrompt("extract"),
     messages: [{ role: "user", content: buildExtractionPrompt(content) }],
-    maxTokens: 2048,
+    maxOutputTokens: 2048,
   });
 
   try {
@@ -206,11 +202,4 @@ export async function extractEntitiesWithAI(
   }
 
   return extractEntities(content);
-}
-
-export function createAgentTools() {
-  return {
-    webSearch: createSearchTool(),
-    extractEntities: createEntityTool(),
-  };
 }

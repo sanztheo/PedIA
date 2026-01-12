@@ -84,45 +84,34 @@ npx tsx tests/graph.test.ts
 
 ---
 
-## Nixou - Queue Workers
+## ~~Nixou - Queue Workers~~ ✅ COMPLETE + REVIEWED
 
-### MISSION
-Implementer le systeme de queues BullMQ pour le traitement async.
+### TACHES COMPLETEES
 
-### TACHES A FAIRE (dans l'ordre)
+- ✅ `backend/src/queue/queues.ts` - Setup des 3 queues BullMQ (extract, link, enrich)
+- ✅ `backend/src/queue/workers/extractWorker.ts` - Extraction entites avec AI + fallback regex
+- ✅ `backend/src/queue/workers/linkWorker.ts` - Deduplication entites + creation relations
+- ✅ `backend/src/queue/workers/enrichWorker.ts` - Generation pages manquantes pour entites importantes
+- ✅ `backend/src/queue/index.ts` - startAllWorkers(), stopAllWorkers(), getWorkersHealth()
+- ✅ `backend/tests/queue.test.ts` - Tests complets du systeme de queues
+- ✅ Upgrade AI SDK v4 → v6 + providers compatibles
 
-**Tache 1: Queue Setup**
-- Fichier: `backend/src/queue/queues.ts`
-- Creer les queues: extract, link, enrich
-- Utiliser BullMQ + Redis
+### ARCHITECTURE IMPLEMENTEE
 
-**Tache 2: Extract Worker**
-- Fichier: `backend/src/queue/workers/extractWorker.ts`
-- Extraction entites apres generation
-- Utiliser: `import { extractEntities } from "../../ai/tools/entity.tool"`
-
-**Tache 3: Link Worker**
-- Fichier: `backend/src/queue/workers/linkWorker.ts`
-- Deduplication des entites
-- Creation des relations entre entites
-
-**Tache 4: Enrich Worker**
-- Fichier: `backend/src/queue/workers/enrichWorker.ts`
-- Creer les pages manquantes pour entites importantes
-- Utiliser: `import { generatePage } from "../../ai/agent"`
-
-### FICHIERS A UTILISER
 ```
-backend/src/lib/prisma.ts
-backend/src/lib/redis.ts
-backend/src/ai/agent.ts
-backend/src/ai/tools/entity.tool.ts
+Page generee → ExtractWorker (AI extraction)
+                     ↓
+               LinkWorker (dedup + relations)
+                     ↓
+               EnrichWorker (genere pages manquantes)
+                     ↓
+               (boucle) → ExtractWorker...
 ```
 
 ### TESTS
 ```bash
 npm run typecheck
-npx tsx tests/queue.test.ts
+node --env-file=.env --import=tsx tests/queue.test.ts
 ```
 
 ---

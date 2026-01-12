@@ -1,40 +1,9 @@
-import { tool } from "ai";
-import { z } from "zod";
 import type { EntityType } from "@prisma/client";
 
 export interface ExtractedEntity {
   name: string;
   type: EntityType;
   relevance: number;
-}
-
-export function createEntityTool() {
-  return tool({
-    description:
-      "Extrait les entités nommées (personnes, organisations, lieux, etc.) d'un texte pour construire le graphe de connaissances.",
-    parameters: z.object({
-      content: z.string().describe("Le texte à analyser"),
-      maxEntities: z
-        .number()
-        .min(1)
-        .max(30)
-        .default(15)
-        .describe("Nombre maximum d'entités à extraire"),
-    }),
-    execute: async ({ content, maxEntities }) => {
-      // Fallback simple - extraction des [[wiki links]]
-      const entities = extractWikiLinks(content, maxEntities);
-      return {
-        success: true,
-        count: entities.length,
-        entities: entities.map((e) => ({
-          name: e.name,
-          type: e.type,
-          relevance: Math.round(e.relevance * 100),
-        })),
-      };
-    },
-  });
 }
 
 /**

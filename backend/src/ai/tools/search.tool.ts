@@ -1,6 +1,3 @@
-import { tool } from "ai";
-import { z } from "zod";
-
 export interface WebSearchResult {
   title: string;
   url: string;
@@ -87,36 +84,6 @@ function mockSearch(query: string): WebSearchResponse {
       },
     ],
   };
-}
-
-export function createSearchTool() {
-  return tool({
-    description:
-      "Recherche sur le web pour trouver des informations actuelles et vérifiées. Utilise cette fonction pour rassembler des sources avant d'écrire un article.",
-    parameters: z.object({
-      query: z.string().describe("La requête de recherche"),
-      maxResults: z
-        .number()
-        .min(1)
-        .max(10)
-        .default(5)
-        .describe("Nombre maximum de résultats"),
-    }),
-    execute: async ({ query, maxResults }) => {
-      const result = await searchWithTavily(query, maxResults);
-      return {
-        success: true,
-        query: result.query,
-        summary: result.answer,
-        sources: result.results.map((r) => ({
-          title: r.title,
-          url: r.url,
-          snippet: r.content.substring(0, 500),
-          relevance: Math.round(r.score * 100),
-        })),
-      };
-    },
-  });
 }
 
 export async function webSearch(
