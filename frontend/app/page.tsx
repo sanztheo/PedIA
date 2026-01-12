@@ -37,7 +37,9 @@ export default function Home() {
         <div className="w-full max-w-xl space-y-8">
           {/* Title */}
           <div className="space-y-3 text-center">
-            <h1 className="text-4xl font-semibold tracking-tight">PedIA</h1>
+            <h1 className="text-5xl tracking-tight font-[family-name:var(--font-instrument-serif)]">
+              PedIA
+            </h1>
             <p className="text-muted-foreground">
               L&apos;encyclopédie qui évolue avec vos recherches
             </p>

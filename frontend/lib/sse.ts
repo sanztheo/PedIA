@@ -69,8 +69,10 @@ export function createSSEConnection(
       } catch {
         console.error("Failed to parse server error event");
       }
+      // Only close on server-sent errors (with data)
+      // Browser-internal errors (no data) are handled by onerror
+      eventSource.close();
     }
-    eventSource.close();
   });
 
   // Handle connection errors (network issues, server unavailable, etc.)
