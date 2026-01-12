@@ -45,6 +45,7 @@ export default async function WikiPage({ params }: WikiPageProps) {
             updatedAt={page.updatedAt}
             viewCount={page.viewCount}
             status={page.status}
+            pageId={page.id}
           />
           <div className="max-w-4xl mx-auto px-6 py-8">
             <MarkdownContent content={page.content} />

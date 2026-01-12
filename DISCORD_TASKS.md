@@ -89,7 +89,7 @@ node --env-file=.env --import=tsx tests/queue.test.ts
 
 ---
 
-## Glamgar - Full Frontend
+## ~~Glamgar - Full Frontend~~ ✅ COMPLETE
 
 ### MISSION
 Implementer toute l'interface: layout, homepage, wiki display.
@@ -97,6 +97,18 @@ Implementer toute l'interface: layout, homepage, wiki display.
 ### TACHES COMPLETEES
 
 **Phase 1: Layout** ✅
+
+- ✅ **Tache 1: MainLayout** - `frontend/components/layout/MainLayout.tsx`
+  - Structure: Header + Sidebar + main content
+  - Prop `disableScroll` pour pages wiki
+
+- ✅ **Tache 2: Header** - `frontend/components/layout/Header.tsx`
+  - Menu mobile Sheet drawer
+  - Logo PedIA + navigation desktop
+
+- ✅ **Tache 3: Sidebar** - `frontend/components/layout/Sidebar.tsx`
+  - Navigation, pages recentes (fetch API)
+  - Mini-graphe interactif
 
 - ✅ **Tache 4: SearchBar** - `frontend/components/search/SearchBar.tsx`
   - Input clean style shadcn + kbd hint + loader
@@ -114,48 +126,23 @@ Implementer toute l'interface: layout, homepage, wiki display.
 - ✅ **GenerationProgress** - `frontend/components/generation/GenerationProgress.tsx`
   - Redesign minimal: steps en liste, apercu, entites en tags
 
-### TACHES A FAIRE
+**Phase 3: Wiki** ✅
 
-**Phase 1: Layout (restant)**
+- ✅ **Tache 7: Wiki Page** - `frontend/app/wiki/[slug]/page.tsx`
+  - SSR pour SEO, fetch page + entites
+  - Layout: contenu + sidebar entites
 
-**Tache 1: MainLayout**
-- Fichier: `frontend/components/layout/MainLayout.tsx`
-- Structure: Header + Sidebar + main content
+- ✅ **Tache 8: MarkdownContent** - `frontend/components/wiki/MarkdownContent.tsx`
+  - Rendu markdown avec react-markdown
+  - Support syntaxe [[Entity]] → liens wiki
 
-**Tache 2: Header** (extraire de page.tsx)
-- Fichier: `frontend/components/layout/Header.tsx`
-- Reutiliser le header existant
+- ✅ **Tache 9: EntitySidebar** - `frontend/components/wiki/EntitySidebar.tsx`
+  - Liste entites avec badges colores par type
+  - Icones par type (User, Building2, MapPin, etc.)
 
-**Tache 3: Sidebar**
-- Fichier: `frontend/components/layout/Sidebar.tsx`
-- Navigation, pages recentes
-
-**Phase 3: Wiki**
-
-**Tache 7: Wiki Page**
-- Fichier: `frontend/app/wiki/[slug]/page.tsx`
-- Fetch page + rendu markdown + sidebar entites
-
-**Tache 8: MarkdownContent**
-- Fichier: `frontend/components/wiki/MarkdownContent.tsx`
-- Rendu markdown + convertir [[Entity]] en liens
-
-**Tache 9: EntitySidebar**
-- Fichier: `frontend/components/wiki/EntitySidebar.tsx`
-- Liste entites avec badges par type
-
-**Tache 10: PageHeader**
-- Fichier: `frontend/components/wiki/PageHeader.tsx`
-- Titre, date, vues, bouton graph
-
-### FICHIERS A UTILISER
-```
-frontend/lib/api.ts
-frontend/hooks/useSSE.ts
-frontend/types/index.ts
-frontend/components/graph/GraphView.tsx
-frontend/components/generation/GenerationProgress.tsx
-```
+- ✅ **Tache 10: PageHeader** - `frontend/components/wiki/PageHeader.tsx`
+  - Titre, date relative, vues, badge status
+  - Bouton "Voir le graph" vers /explore
 
 ### TESTS
 ```bash

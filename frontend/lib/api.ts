@@ -40,7 +40,7 @@ export const api = {
         `/api/pages?page=${params?.page || 1}&limit=${params?.limit || 20}`,
       ),
 
-    get: (slug: string) => fetchAPI<Page>(`/api/pages/${slug}`),
+    get: (slug: string) => fetchAPI<Page>(`/api/pages/${slug}?entities=true`),
 
     search: (query: string) =>
       fetchAPI<{ results: SearchResult[]; total: number }>(

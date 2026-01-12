@@ -1,38 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Home, Compass, Search, ChevronRight, Network } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GraphView } from '@/components/graph/GraphView';
 import { cn } from '@/lib/utils';
-import type { GraphData } from '@/types';
+import { api } from '@/lib/api';
+import type { GraphData, Page } from '@/types';
 
 export function Sidebar() {
-  // TODO: Fetch from api.pages.list() instead of hardcoded data
-  const pagesRecentes = [
-    { id: 1, title: 'Intelligence Artificielle', slug: 'intelligence-artificielle' },
-    { id: 2, title: 'Apprentissage Automatique', slug: 'apprentissage-automatique' },
-    { id: 3, title: 'Réseaux de Neurones', slug: 'reseaux-de-neurones' },
-    { id: 4, title: 'Apprentissage Profond', slug: 'apprentissage-profond' },
-    { id: 5, title: 'Traitement du Langage', slug: 'traitement-langage-naturel' },
-  ];
+  const [pages, setPages] = useState<Page[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
 
-  // Demo graph data - TODO: Fetch from API
-  const [graphData] = useState<GraphData>({
-    nodes: [
-      { id: '1', label: 'IA', type: 'page' },
-      { id: '2', label: 'ML', type: 'entity', entityType: 'CONCEPT' },
-      { id: '3', label: 'Deep Learning', type: 'entity', entityType: 'CONCEPT' },
-      { id: '4', label: 'NLP', type: 'entity', entityType: 'CONCEPT' },
-    ],
-    links: [
-      { source: '1', target: '2' },
-      { source: '1', target: '3' },
-      { source: '2', target: '3' },
-      { source: '1', target: '4' },
-    ],
-  });
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [pagesRes, graphRes] = await Promise.all([
+          api.pages.list({ limit: 5 }),
+          api.graph.full({ limit: 20 }),
+        ]);
+
+        if (pagesRes.data) {
+          setPages(pagesRes.data.data);
+        }
+
+        if (graphRes.data) {
+          setGraphData(graphRes.data);
+        }
+      } catch {
+        // Silently fail - sidebar will show empty state
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   const [showGraph, setShowGraph] = useState(true);
 
@@ -56,20 +61,32 @@ export function Sidebar() {
           Pages récentes
         </p>
         <div className="space-y-0.5">
-          {pagesRecentes.map((page) => (
-            <Link
-              key={page.id}
-              href={`/wiki/${page.slug}`}
-              className={cn(
-                "group flex items-center gap-2 px-2 py-1.5 rounded-md text-sm",
-                "text-muted-foreground hover:text-foreground",
-                "hover:bg-accent transition-colors"
-              )}
-            >
-              <span className="truncate flex-1">{page.title}</span>
-              <ChevronRight className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
-          ))}
+          {loading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="px-2 py-1.5">
+                <div className="h-4 bg-muted rounded animate-pulse" />
+              </div>
+            ))
+          ) : pages.length > 0 ? (
+            pages.map((page) => (
+              <Link
+                key={page.id}
+                href={`/wiki/${page.slug}`}
+                className={cn(
+                  "group flex items-center gap-2 px-2 py-1.5 rounded-md text-sm",
+                  "text-muted-foreground hover:text-foreground",
+                  "hover:bg-accent transition-colors"
+                )}
+              >
+                <span className="truncate flex-1">{page.title}</span>
+                <ChevronRight className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            ))
+          ) : (
+            <p className="px-2 text-sm text-muted-foreground">
+              Aucune page
+            </p>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,9 @@
 'use client';
 
+import Link from 'next/link';
+import { Network } from 'lucide-react';
 import { PageStatus } from '@/types';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -11,6 +14,7 @@ interface PageHeaderProps {
   updatedAt: string;
   viewCount: number;
   status: PageStatus;
+  pageId?: string;
 }
 
 const statusConfig: Record<PageStatus, { label: string; className: string }> = {
@@ -38,6 +42,7 @@ export function PageHeader({
   updatedAt,
   viewCount,
   status,
+  pageId,
 }: PageHeaderProps) {
   const statusInfo = statusConfig[status];
   const createdDate = new Date(createdAt);
@@ -46,7 +51,7 @@ export function PageHeader({
   return (
     <div className="border-b bg-gradient-to-b from-background to-muted/30 py-8 px-6 sm:px-8">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-4 flex items-center gap-3">
+        <div className="mb-4 flex items-center justify-between">
           <span
             className={cn(
               'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold',
@@ -55,6 +60,15 @@ export function PageHeader({
           >
             {statusInfo.label}
           </span>
+
+          {pageId && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/explore?page=${pageId}`}>
+                <Network className="size-4" />
+                <span className="hidden sm:inline">Voir le graph</span>
+              </Link>
+            </Button>
+          )}
         </div>
 
         <h1 className="mb-6 text-4xl font-bold leading-tight">
