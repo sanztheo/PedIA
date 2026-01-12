@@ -1,32 +1,17 @@
 import { Hono } from "hono";
-import type { Context, Next } from "hono";
+import { basicAuth } from "hono/basic-auth";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { HonoAdapter } from "@bull-board/hono";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { extractQueue, linkQueue, enrichQueue } from "../queue/queues";
 
-const admin = new Hono();
-
-// Middleware d'authentification pour /admin/*
-const authMiddleware = async (c: Context, next: Next) => {
-  const adminSecret = process.env.ADMIN_SECRET;
-
-  // Si pas de secret configuré, bloquer l'accès
-  if (!adminSecret) {
-    return c.json({ error: "ADMIN_SECRET not configured" }, 500);
-  }
-
-  // Vérifier le header ou query param
-  const providedSecret =
-    c.req.header("x-admin-secret") || c.req.query("secret");
-
-  if (providedSecret !== adminSecret) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  await next();
-};
+// Basic Auth middleware
+const adminSecret = process.env.ADMIN_SECRET || "admin";
+const auth = basicAuth({
+  username: "admin",
+  password: adminSecret,
+});
 
 // Setup Bull Board
 const serverAdapter = new HonoAdapter(serveStatic);
@@ -45,14 +30,13 @@ if (queues.length > 0) {
   });
 }
 
-// Route Bull Board UI (avec auth)
-const bullBoardApp = serverAdapter.registerPlugin();
-admin.use("/queues", authMiddleware);
-admin.use("/queues/*", authMiddleware);
-admin.route("/queues", bullBoardApp);
+// Export Bull Board app pour montage direct
+export const bullBoardApp = serverAdapter.registerPlugin();
 
-// Route statut des queues (API simple avec auth)
-admin.get("/status", authMiddleware, async (c) => {
+// Admin API routes
+const admin = new Hono();
+
+admin.get("/status", auth, async (c) => {
   if (!extractQueue || !linkQueue || !enrichQueue) {
     return c.json({ error: "Queues not available (REDIS_URL not set)" }, 503);
   }
@@ -74,3 +58,4 @@ admin.get("/status", authMiddleware, async (c) => {
 });
 
 export default admin;
+export { auth as adminAuth };

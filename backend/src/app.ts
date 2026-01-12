@@ -6,7 +6,7 @@ import pages from "./routes/pages";
 import generate from "./routes/generate";
 import graph from "./routes/graph";
 import search from "./routes/search";
-import admin from "./routes/admin";
+import admin, { bullBoardApp, adminAuth } from "./routes/admin";
 
 const app = new Hono();
 
@@ -31,7 +31,11 @@ app.route("/api/generate", generate);
 app.route("/api/graph", graph);
 app.route("/api/search", search);
 
-// Admin routes (Bull Board dashboard)
+// Admin API routes
 app.route("/admin", admin);
+
+// Bull Board dashboard (avec auth)
+app.use("/admin/queues/*", adminAuth);
+app.route("/admin/queues", bullBoardApp);
 
 export { app };
