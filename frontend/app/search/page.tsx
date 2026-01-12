@@ -2,8 +2,10 @@
 
 import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSSE } from "@/hooks/useSSE";
 import { GenerationProgress } from "@/components/generation/GenerationProgress";
+import { Loader2 } from "lucide-react";
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -39,79 +41,112 @@ function SearchContent() {
 
   if (!query) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Aucune recherche
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Veuillez effectuer une recherche depuis la page d&apos;accueil.
-          </p>
-          <button
-            onClick={() => router.push("/")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Retour à l&apos;accueil
-          </button>
-        </div>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center px-6">
+          <div className="text-center space-y-4">
+            <h1 className="text-xl font-medium">Aucune recherche</h1>
+            <p className="text-sm text-muted-foreground">
+              Veuillez effectuer une recherche depuis la page d&apos;accueil.
+            </p>
+            <button
+              onClick={() => router.push("/")}
+              className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+            >
+              Retour à l&apos;accueil
+            </button>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            {query}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {status === "loading" && "Génération en cours..."}
-            {status === "complete" && "Article généré avec succès !"}
-            {status === "error" && "Une erreur est survenue"}
-          </p>
-        </header>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
 
-        <GenerationProgress
-          currentStep={currentStep}
-          completedSteps={completedSteps}
-          content={content}
-          entities={entities}
-          error={error}
-        />
+      <main className="flex-1 px-6 py-8">
+        <div className="max-w-2xl mx-auto space-y-8">
+          {/* Query header */}
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Génération en cours</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{query}</h1>
+          </div>
 
-        {status === "complete" && page && (
-          <div className="mt-8 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg">
-              <span>✓</span>
-              <span>Redirection vers l&apos;article...</span>
-            </div>
-            <p className="mt-4">
+          {/* Progress */}
+          <GenerationProgress
+            currentStep={currentStep}
+            completedSteps={completedSteps}
+            content={content}
+            entities={entities}
+            error={error}
+          />
+
+          {/* Success state */}
+          {status === "complete" && page && (
+            <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="size-2 rounded-full bg-green-500" />
+                <span className="text-sm">Article généré</span>
+              </div>
               <button
                 onClick={() => router.push(`/wiki/${page.slug}`)}
-                className="text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Cliquez ici si vous n&apos;êtes pas redirigé
+                Voir l&apos;article →
               </button>
-            </p>
-          </div>
-        )}
+            </div>
+          )}
 
-        {status === "error" && (
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => {
-                reset();
-                generate(query);
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Réessayer
-            </button>
-          </div>
-        )}
-      </div>
+          {/* Error state */}
+          {status === "error" && (
+            <div className="flex items-center justify-between p-4 border border-destructive/50 rounded-lg">
+              <span className="text-sm text-destructive">
+                Une erreur est survenue
+              </span>
+              <button
+                onClick={() => {
+                  reset();
+                  generate(query);
+                }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Réessayer
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
+  );
+}
+
+function Header() {
+  return (
+    <header className="border-b border-border">
+      <div className="max-w-screen-lg mx-auto px-6 h-14 flex items-center justify-between">
+        <Link
+          href="/"
+          className="text-sm font-medium hover:text-muted-foreground transition-colors"
+        >
+          PedIA
+        </Link>
+        <nav className="flex items-center gap-6">
+          <Link
+            href="/explore"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Explorer
+          </Link>
+          <Link
+            href="/graph"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Graph
+          </Link>
+        </nav>
+      </div>
+    </header>
   );
 }
 
@@ -119,8 +154,8 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="size-5 text-muted-foreground animate-spin" />
         </div>
       }
     >

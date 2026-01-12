@@ -20,18 +20,19 @@ pedia/
 
 ---
 
-## ~~Theo - Backend AI + Frontend Streaming~~ ✅ COMPLETE
+## ~~Theo - Backend AI + Frontend Streaming~~ ✅ COMPLETE + REVIEWED
 
 ### TACHES COMPLETEES
 
-- ✅ `backend/src/ai/agent.ts`
+- ✅ `backend/src/ai/agent.ts` - refacto: validation input + AI entity extraction
 - ✅ `backend/src/ai/prompts.ts`
 - ✅ `backend/src/ai/tools/search.tool.ts`
-- ✅ `backend/src/ai/tools/entity.tool.ts`
-- ✅ `backend/src/routes/generate.ts`
+- ✅ `backend/src/ai/tools/entity.tool.ts` - simplifie: AI-first, regex fallback
+- ✅ `backend/src/routes/generate.ts` - refacto: transaction atomique Prisma
 - ✅ `frontend/components/generation/GenerationProgress.tsx`
 - ✅ `frontend/components/graph/GraphView.tsx`
 - ✅ `frontend/app/search/page.tsx`
+- ✅ `frontend/lib/sse.ts` - fix: error handling SSE
 
 ---
 
@@ -131,35 +132,41 @@ npx tsx tests/queue.test.ts
 ### MISSION
 Implementer toute l'interface: layout, homepage, wiki display.
 
-### TACHES A FAIRE (dans l'ordre)
+### TACHES COMPLETEES
 
-**Phase 1: Layout**
+**Phase 1: Layout** ✅
+
+- ✅ **Tache 4: SearchBar** - `frontend/components/search/SearchBar.tsx`
+  - Input clean style shadcn + kbd hint + loader
+
+**Phase 2: Pages** ✅
+
+- ✅ **Tache 5: Homepage** - `frontend/app/page.tsx`
+  - Design minimal style Linear/Vercel
+  - Header avec nav, SearchBar centree, features inline
+
+- ✅ **Tache 6: Search Page** - `frontend/app/search/page.tsx`
+  - Redesign complet style shadcn
+  - GenerationProgress integre
+
+- ✅ **GenerationProgress** - `frontend/components/generation/GenerationProgress.tsx`
+  - Redesign minimal: steps en liste, apercu, entites en tags
+
+### TACHES A FAIRE
+
+**Phase 1: Layout (restant)**
 
 **Tache 1: MainLayout**
 - Fichier: `frontend/components/layout/MainLayout.tsx`
 - Structure: Header + Sidebar + main content
 
-**Tache 2: Header**
+**Tache 2: Header** (extraire de page.tsx)
 - Fichier: `frontend/components/layout/Header.tsx`
-- Logo PedIA + navigation
+- Reutiliser le header existant
 
 **Tache 3: Sidebar**
 - Fichier: `frontend/components/layout/Sidebar.tsx`
 - Navigation, pages recentes
-
-**Tache 4: SearchBar**
-- Fichier: `frontend/components/search/SearchBar.tsx`
-- Input + redirect vers /search?q=...
-
-**Phase 2: Pages**
-
-**Tache 5: Homepage**
-- Fichier: `frontend/app/page.tsx`
-- Style Google: logo + SearchBar centre
-
-**Tache 6: Layout racine**
-- Fichier: `frontend/app/layout.tsx`
-- Integrer MainLayout + dark mode
 
 **Phase 3: Wiki**
 
