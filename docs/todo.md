@@ -124,7 +124,7 @@ frontend/components/graph/GraphView.tsx
 
 ```typescript
 interface GraphViewRef {
-  zoomIn: () => void;
+  zoomIn: () => void;****
   zoomOut: () => void;
   reset: () => void;
   centerOn: (nodeId: string) => void;

@@ -137,7 +137,7 @@ export function createMockSSE(
 
         for (const chunk of chunks) {
           if (cancelled) return;
-          onEvent({ type: "content_chunk", data: { content: chunk } });
+          onEvent({ type: "content_chunk", content: chunk });
           await delay(200);
         }
       }
@@ -151,7 +151,7 @@ export function createMockSSE(
 
         for (const entity of entities) {
           if (cancelled) return;
-          onEvent({ type: "entity_found", data: { entity } });
+          onEvent({ type: "entity_found", entity });
           await delay(300);
         }
       }
@@ -162,12 +162,10 @@ export function createMockSSE(
     if (!cancelled) {
       onEvent({
         type: "complete",
-        data: {
-          page: {
-            id: "mock-id",
-            slug: "tesla",
-            title: "Tesla",
-          },
+        page: {
+          id: "mock-id",
+          slug: "tesla",
+          title: "Tesla",
         },
       });
     }

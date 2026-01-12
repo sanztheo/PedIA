@@ -30,6 +30,10 @@ export interface SSEEvent {
   step?: GenerationStep;
   data?: unknown;
   message?: string;
+  // Direct properties sent by backend (not nested in data)
+  content?: string;
+  entity?: { name: string; type: string };
+  page?: { id: string; slug: string; title: string };
 }
 
 export interface StepStartEvent extends SSEEvent {

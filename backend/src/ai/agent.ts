@@ -39,8 +39,11 @@ export interface SSEEmitter {
   error: (message: string) => Promise<void>;
 }
 
-function getModel(provider: AIProvider = "google"): LanguageModel {
-  switch (provider) {
+function getModel(provider?: AIProvider): LanguageModel {
+  // Auto-select provider based on available API keys (Google priority)
+  const effectiveProvider = provider ?? getDefaultProvider();
+
+  switch (effectiveProvider) {
     case "google": {
       if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
         throw new Error(
@@ -50,7 +53,7 @@ function getModel(provider: AIProvider = "google"): LanguageModel {
       const google = createGoogleGenerativeAI({
         apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
       });
-      return google("gemini-2.0-flash");
+      return google("gemini-3-flash-preview");
     }
     case "anthropic": {
       if (!process.env.ANTHROPIC_API_KEY) {
@@ -71,8 +74,16 @@ function getModel(provider: AIProvider = "google"): LanguageModel {
       return openai("gpt-4o");
     }
     default:
-      throw new Error(`Unknown provider: ${provider}`);
+      throw new Error(`Unknown provider: ${effectiveProvider}`);
   }
+}
+
+function getDefaultProvider(): AIProvider {
+  // Priority: Google > Anthropic > OpenAI
+  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) return "google";
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  if (process.env.OPENAI_API_KEY) return "openai";
+  throw new Error("No AI provider API key configured");
 }
 
 /**
@@ -106,7 +117,7 @@ export async function generatePage(
   // Validate input before any expensive operations
   validateContext(ctx);
 
-  const { query, provider = "google", maxTokens = 4096 } = ctx;
+  const { query, provider, maxTokens = 4096 } = ctx;
   const model = getModel(provider);
 
   await emitter.stepStart("search", "Recherche web en cours...");
@@ -172,7 +183,7 @@ export async function generatePage(
 
 export async function extractEntitiesWithAI(
   content: string,
-  provider: AIProvider = "google",
+  provider?: AIProvider,
 ): Promise<ExtractedEntity[]> {
   const model = getModel(provider);
 

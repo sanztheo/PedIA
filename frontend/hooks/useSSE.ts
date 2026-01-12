@@ -60,32 +60,24 @@ export function useSSE(): UseSSEReturn {
       case "content_chunk":
         setState((prev) => ({
           ...prev,
-          content:
-            prev.content +
-            ((event.data as { content?: string })?.content || ""),
+          content: prev.content + (event.content || ""),
         }));
         break;
 
       case "entity_found":
-        setState((prev) => ({
-          ...prev,
-          entities: [
-            ...prev.entities,
-            (event.data as { entity: { name: string; type: string } })?.entity,
-          ].filter(Boolean),
-        }));
+        if (event.entity) {
+          setState((prev) => ({
+            ...prev,
+            entities: [...prev.entities, event.entity!],
+          }));
+        }
         break;
 
       case "complete":
         setState((prev) => ({
           ...prev,
           status: "complete",
-          page:
-            (
-              event.data as {
-                page: { id: string; slug: string; title: string };
-              }
-            )?.page || null,
+          page: event.page || null,
         }));
         break;
 
