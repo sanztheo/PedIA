@@ -1,36 +1,51 @@
 import { Hono } from "hono";
+import { GraphService } from "../services/graph.service";
 
 const app = new Hono();
 
-// GET /api/graph - Get full graph (paginated)
 app.get("/", async (c) => {
-  const limitParam = parseInt(c.req.query("limit") || "100");
-  const offsetParam = parseInt(c.req.query("offset") || "0");
+  const limitParam = c.req.query("limit");
+  const offsetParam = c.req.query("offset");
 
-  const limit = Number.isNaN(limitParam) ? 100 : limitParam;
-  const offset = Number.isNaN(offsetParam) ? 0 : offsetParam;
+  const limit = limitParam ? parseInt(limitParam, 10) : 100;
+  const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
 
-  // TODO: Implement graph retrieval
-  return c.json({ nodes: [], links: [], total: 0 });
+  if (Number.isNaN(limit) || Number.isNaN(offset) || limit < 1 || offset < 0) {
+    return c.json({ error: "Invalid pagination parameters" }, 400);
+  }
+
+  const result = await GraphService.getFullGraph({
+    limit: Math.min(limit, 500),
+    offset,
+  });
+
+  return c.json(result);
 });
 
-// GET /api/graph/local/:pageId - Get local graph around a page
 app.get("/local/:pageId", async (c) => {
   const pageId = c.req.param("pageId");
-  const depthParam = parseInt(c.req.query("depth") || "2");
+  const depthParam = c.req.query("depth");
 
-  const depth = Number.isNaN(depthParam) ? 2 : depthParam;
+  const depth = depthParam ? parseInt(depthParam, 10) : 2;
 
-  // TODO: Implement local graph retrieval
-  return c.json({ nodes: [], links: [] });
+  if (Number.isNaN(depth) || depth < 1 || depth > 5) {
+    return c.json({ error: "Invalid depth (must be 1-5)" }, 400);
+  }
+
+  const result = await GraphService.getLocalGraph(pageId, depth);
+  return c.json(result);
 });
 
-// GET /api/graph/entity/:entityId - Get entity relationships
 app.get("/entity/:entityId", async (c) => {
   const entityId = c.req.param("entityId");
 
-  // TODO: Implement entity relations retrieval
-  return c.json({ entity: null, relations: [] });
+  const result = await GraphService.getEntityRelations(entityId);
+
+  if (!result.entity) {
+    return c.json({ error: "Entity not found" }, 404);
+  }
+
+  return c.json(result);
 });
 
 export default app;

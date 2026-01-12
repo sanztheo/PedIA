@@ -36,50 +36,23 @@ pedia/
 
 ---
 
-## Kofu - Backend Services + Routes
+## ~~Kofu - Backend Services + Routes~~ ✅ COMPLETE
 
-### MISSION
-Implementer les services CRUD et routes API.
+### TACHES COMPLETEES
 
-### TACHES A FAIRE (dans l'ordre)
-
-**Tache 1: PageService**
-- Fichier: `backend/src/services/page.service.ts`
-- Fonctions: create, getBySlug, list, update, delete
-- Cache Redis sur getBySlug
-
-**Tache 2: EntityService**
-- Fichier: `backend/src/services/entity.service.ts`
-- Fonctions: create, getById, findByName, list, linkToPage
-
-**Tache 3: GraphService**
-- Fichier: `backend/src/services/graph.service.ts`
-- Fonctions: getFullGraph, getLocalGraph, getEntityRelations
-
-**Tache 4: Routes pages.ts**
-- Fichier: `backend/src/routes/pages.ts`
-- GET /api/pages, GET /api/pages/:slug, POST, PATCH, DELETE
-
-**Tache 5: Routes graph.ts**
-- Fichier: `backend/src/routes/graph.ts`
-- GET /api/graph, GET /api/graph/local/:pageId
-
-**Tache 6: Routes search.ts**
-- Fichier: `backend/src/routes/search.ts`
-- GET /api/search?q=... avec full-text Prisma
-
-### FICHIERS A UTILISER
-```
-backend/src/lib/prisma.ts
-backend/src/lib/redis.ts
-backend/src/types/index.ts
-```
+- ✅ `backend/src/services/page.service.ts` - CRUD complet + cache Redis sur getBySlug
+- ✅ `backend/src/services/entity.service.ts` - create, getById, findByName, list, linkToPage
+- ✅ `backend/src/services/graph.service.ts` - getFullGraph, getLocalGraph, getEntityRelations
+- ✅ `backend/src/services/index.ts` - exports centralisés
+- ✅ `backend/src/routes/pages.ts` - GET, POST, PATCH, DELETE avec validation
+- ✅ `backend/src/routes/graph.ts` - GET /api/graph, GET /api/graph/local/:pageId, GET /api/graph/entity/:entityId
+- ✅ `backend/src/routes/search.ts` - GET /api/search?q=... avec full-text Prisma + cache Redis
 
 ### TESTS
 ```bash
 npm run typecheck
-npx tsx tests/pages.test.ts
-npx tsx tests/graph.test.ts
+node --env-file=.env --import=tsx tests/pages.test.ts
+node --env-file=.env --import=tsx tests/graph.test.ts
 ```
 
 ---
@@ -197,7 +170,7 @@ npm run build
 | Layer | Tech |
 |-------|------|
 | Frontend | Next.js 15, Tailwind, SWR, react-markdown |
-| Backend | Hono, Prisma, BullMQ, Vercel AI SDK |
+| Backend | Hono, Prisma, BullMQ, Vercel AI SDK v6 |
 | Database | PostgreSQL, Redis |
 | AI | Gemini / OpenAI / Claude |
 

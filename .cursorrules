@@ -2,32 +2,123 @@
 
 You are an expert software engineer working on PedIA, an AI-powered auto-evolving encyclopedia.
 
-## PROJECT CONTEXT
+## Project Overview
 
-**Read these docs before coding:**
-- `docs/architecture/overview.md` - System architecture
-- `docs/architecture/frontend.md` - Next.js patterns
-- `docs/architecture/backend.md` - Hono API structure
-- `docs/architecture/database.md` - DB schemas
-- `docs/features/` - Feature specifications
+PedIA est une encyclopedie auto-evolutive alimentee par l'IA. Chaque recherche enrichit la base de connaissances en creant ou completant des pages interconnectees.
 
-**Tech Stack:**
-- Frontend: Next.js 15 (App Router) + Tailwind + SWR
-- Backend: Hono + TypeScript + Vercel AI SDK
-- DB: PostgreSQL + Qdrant + Redis
-- AI: Claude via Vercel AI SDK
-- Queue: BullMQ
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 15 (App Router) + Tailwind + SWR |
+| Backend | Hono (TypeScript) + Vercel AI SDK v6 |
+| Database | PostgreSQL (Prisma) + Qdrant + Redis |
+| AI | Gemini / OpenAI / Claude via Vercel AI SDK |
+| Queue | BullMQ (Redis) |
+| Deploy | Vercel (frontend) + Railway (backend) |
+
+---
+
+## Documentation Index
+
+| File | Description |
+|------|-------------|
+| `docs/architecture/overview.md` | Vue d'ensemble, flow principal |
+| `docs/architecture/frontend.md` | Next.js, composants, patterns |
+| `docs/architecture/backend.md` | Hono API, services, queues |
+| `docs/architecture/database.md` | PostgreSQL, Qdrant, Redis schemas |
+| `docs/features/streaming-ui.md` | SSE streaming, progress UI |
+| `docs/features/entity-extraction.md` | NER, knowledge graph |
+
+---
+
+## Project Structure
+
+```
+PedIA/
++-- frontend/           # Next.js 15 app
+|   +-- src/
+|       +-- app/        # Pages (App Router)
+|       +-- components/ # React components
+|       +-- hooks/      # Custom hooks
+|       +-- services/   # API client
++-- backend/            # Hono API
+|   +-- src/
+|       +-- routes/     # API endpoints
+|       +-- services/   # Business logic
+|       +-- ai/         # AI agent, tools, prompts
+|       +-- queue/      # BullMQ queues + workers
+|       +-- lib/        # Prisma, Redis, utils
+|   +-- tests/          # Backend tests
++-- docs/               # Documentation
+```
+
+---
+
+## Key Concepts
+
+### Page Generation Flow
+
+1. User search query
+2. Check cache/DB for existing page
+3. Web search (Tavily) + scraping (Jina)
+4. AI generation with streaming (Gemini/OpenAI/Claude)
+5. Entity extraction (AI + regex fallback)
+6. Graph linking
+7. Save + cache
+8. Queue async jobs: extract → link → enrich
+
+### Queue Pipeline (BullMQ)
+
+```
+Page created → ExtractWorker (AI entity extraction)
+                    ↓
+              LinkWorker (dedup + relations)
+                    ↓
+              EnrichWorker (generate missing pages)
+                    ↓
+              (loop) → ExtractWorker...
+```
+
+| Worker | Purpose |
+|--------|---------|
+| `extractWorker` | Extract entities from page content using AI (fallback: regex) |
+| `linkWorker` | Deduplicate entities, create relations between co-occurring entities |
+| `enrichWorker` | Generate pages for important entities (PERSON, ORG, LOCATION, EVENT) |
+
+### Entity Types
+
+PERSON, ORGANIZATION, LOCATION, CONCEPT, EVENT, PRODUCT, WORK, OTHER
+
+### Streaming Events (SSE)
+
+- `step_start` / `step_complete` : Progress tracking
+- `content_chunk` : Streamed markdown
+- `entity_found` : Detected entities
+- `complete` : Redirect to page
+
+---
+
+## Key Files
+
+| Purpose | Location |
+|---------|----------|
+| API routes | `backend/src/routes/` |
+| Services | `backend/src/services/` (PageService, EntityService, GraphService) |
+| AI agent | `backend/src/ai/agent.ts` |
+| AI prompts | `backend/src/ai/prompts.ts` |
+| AI tools | `backend/src/ai/tools/` |
+| Queue setup | `backend/src/queue/queues.ts` |
+| Queue workers | `backend/src/queue/workers/` |
+| Queue orchestration | `backend/src/queue/index.ts` |
+| Prisma client | `backend/src/lib/prisma.ts` |
+| Redis client | `backend/src/lib/redis.ts` |
+| DB schema | `backend/prisma/schema.prisma` |
+| Tests | `backend/tests/` |
 
 ---
 
 ## WORKFLOWS
-
-### EXPLORE (understand/explain something)
-
-1. **PARSE**: Extract key terms from question
-2. **SEARCH**: Find relevant files (search multiple keywords)
-3. **ANALYZE**: Read files, note paths with line numbers
-4. **ANSWER**: Respond with file references
 
 ### EPCT (feature implementation)
 
@@ -49,15 +140,8 @@ You are an expert software engineer working on PedIA, an AI-powered auto-evolvin
 
 **4. TEST**
 - Run: `npm run lint`, `npm run typecheck`
-- Run only related tests
-- **DEBUG with VSCode**: Use `.vscode/launch.json` configs
+- Run tests: `node --env-file=.env --import=tsx tests/X.test.ts`
 - If fail → return to PLAN
-
-### ONESHOT (quick features)
-
-1. Quick context (2-3 searches + docs check)
-2. Implement following existing patterns
-3. Lint + typecheck
 
 ### CODE-REVIEW
 
@@ -78,7 +162,7 @@ You are an expert software engineer working on PedIA, an AI-powered auto-evolvin
 
 ---
 
-## CODE STYLE (PedIA Specific)
+## CODE STYLE
 
 ### Frontend (Next.js)
 - Server Components by default (SSR for SEO)
@@ -88,9 +172,10 @@ You are an expert software engineer working on PedIA, an AI-powered auto-evolvin
 
 ### Backend (Hono)
 - SSE streaming for AI generation
-- BullMQ for async jobs
+- BullMQ for async jobs (extract → link → enrich)
 - Redis caching with TTL
 - Prisma for PostgreSQL
+- Vercel AI SDK v6 for AI providers
 
 ### Naming
 - Components: PascalCase
@@ -100,52 +185,32 @@ You are an expert software engineer working on PedIA, an AI-powered auto-evolvin
 
 ---
 
-## DEBUG & TEST
+## Commands
 
-**REGLE: Chaque implementation doit etre testee/debuggee**
-
-### VSCode Launch Configs (`.vscode/launch.json`)
-- `Backend: Dev` - Lance le serveur backend
-- `Backend: Debug Current File` - Debug le fichier ouvert
-- `Backend: Test API Pages` - Test les routes pages
-- `Backend: Test API Generate` - Test le SSE generation
-- `Backend: Test API Graph` - Test les routes graph
-- `Frontend: Dev` - Lance Next.js
-- `Full Stack: Dev` - Lance backend + frontend
-
-### Workflow de test
-1. Implementer la feature
-2. Creer/modifier le test dans `backend/tests/`
-3. Lancer le debug config correspondant
-4. Verifier les logs dans la console
-5. Fix si erreur, puis commit
-
-### Commandes
 ```bash
-# Backend
-npm run typecheck     # Verifier types
-npm run lint          # Linter
-npx tsx tests/X.test.ts  # Run un test
-
 # Frontend
+cd frontend && npm run dev
 npm run lint
-npm run build         # Verifier build
+npm run build
+
+# Backend
+cd backend && npm run dev
+npm run typecheck
+npm run lint
+
+# Run tests (with env vars)
+node --env-file=.env --import=tsx tests/queue.test.ts
 ```
 
 ---
 
-## KEY FILES
+## Environment Variables
 
-| Purpose | Location |
-|---------|----------|
-| API routes | `backend/src/routes/` |
-| AI services | `backend/src/services/ai/` |
-| React components | `frontend/components/` |
-| Hooks | `frontend/hooks/` |
-| DB schema | `backend/prisma/schema.prisma` |
-| Types | `backend/src/types/`, `frontend/types/` |
-| Tests | `backend/tests/` |
-| Debug configs | `.vscode/launch.json` |
+```bash
+DATABASE_URL, REDIS_URL
+GOOGLE_GENERATIVE_AI_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY
+TAVILY_API_KEY
+```
 
 ---
 

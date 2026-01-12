@@ -9,10 +9,10 @@ PedIA est une encyclopedie auto-evolutive alimentee par l'IA. Chaque recherche e
 | Layer | Technology |
 |-------|------------|
 | Frontend | Next.js 15 (App Router) + Tailwind + SWR |
-| Backend | Hono (TypeScript) + Vercel AI SDK |
+| Backend | Hono (TypeScript) + Vercel AI SDK v6 |
 | Database | PostgreSQL (Prisma) + Qdrant + Redis |
 | AI | Gemini / OpenAI / Claude via Vercel AI SDK |
-| Queue | BullMQ |
+| Queue | BullMQ (Redis) |
 | Deploy | Vercel (frontend) + Railway (backend) |
 
 ---
@@ -68,10 +68,11 @@ PedIA/
 |   +-- src/
 |       +-- routes/     # API endpoints
 |       +-- services/   # Business logic
-|       +-- queue/      # BullMQ workers
-|       +-- db/         # Prisma + Qdrant
+|       +-- ai/         # AI agent, tools, prompts
+|       +-- queue/      # BullMQ queues + workers
+|       +-- lib/        # Prisma, Redis, utils
+|   +-- tests/          # Backend tests
 +-- docs/               # Documentation
-+-- CLAUDE.md           # This file
 ```
 
 ---
@@ -84,13 +85,32 @@ PedIA/
 2. Check cache/DB for existing page
 3. Web search (Tavily) + scraping (Jina)
 4. AI generation with streaming (Gemini/OpenAI/Claude)
-5. Entity extraction
+5. Entity extraction (AI + regex fallback)
 6. Graph linking
 7. Save + cache
+8. Queue async jobs: extract → link → enrich
+
+### Queue Pipeline (BullMQ)
+
+```
+Page created → ExtractWorker (AI entity extraction)
+                    ↓
+              LinkWorker (dedup + relations)
+                    ↓
+              EnrichWorker (generate missing pages)
+                    ↓
+              (loop) → ExtractWorker...
+```
+
+| Worker | Purpose |
+|--------|---------|
+| `extractWorker` | Extract entities from page content using AI (fallback: regex) |
+| `linkWorker` | Deduplicate entities, create relations between co-occurring entities |
+| `enrichWorker` | Generate pages for important entities (PERSON, ORG, LOCATION, EVENT) |
 
 ### Entity Types
 
-PERSON, ORGANIZATION, LOCATION, CONCEPT, EVENT, PRODUCT, WORK
+PERSON, ORGANIZATION, LOCATION, CONCEPT, EVENT, PRODUCT, WORK, OTHER
 
 ### Streaming Events (SSE)
 
@@ -98,6 +118,25 @@ PERSON, ORGANIZATION, LOCATION, CONCEPT, EVENT, PRODUCT, WORK
 - `content_chunk` : Streamed markdown
 - `entity_found` : Detected entities
 - `complete` : Redirect to page
+
+---
+
+## Key Files
+
+| Purpose | Location |
+|---------|----------|
+| API routes | `backend/src/routes/` |
+| Services | `backend/src/services/` (PageService, EntityService, GraphService) |
+| AI agent | `backend/src/ai/agent.ts` |
+| AI prompts | `backend/src/ai/prompts.ts` |
+| AI tools | `backend/src/ai/tools/` |
+| Queue setup | `backend/src/queue/queues.ts` |
+| Queue workers | `backend/src/queue/workers/` |
+| Queue orchestration | `backend/src/queue/index.ts` |
+| Prisma client | `backend/src/lib/prisma.ts` |
+| Redis client | `backend/src/lib/redis.ts` |
+| DB schema | `backend/prisma/schema.prisma` |
+| Tests | `backend/tests/` |
 
 ---
 
@@ -127,15 +166,16 @@ Correctness > Completeness > Speed
 ```bash
 # Frontend
 cd frontend && npm run dev
+npm run lint
+npm run build
 
 # Backend
 cd backend && npm run dev
-
-# Lint
+npm run typecheck
 npm run lint
 
-# Type check
-npm run typecheck
+# Run tests (with env vars)
+node --env-file=.env --import=tsx tests/queue.test.ts
 ```
 
 ---
@@ -148,3 +188,21 @@ npm run typecheck
 | Jina AI | Content extraction | jina.ai |
 | Qdrant | Vector search | qdrant.tech |
 | Gemini / OpenAI / Claude | AI generation | ai.google.dev / openai.com / anthropic.com |
+
+---
+
+## Environment Variables
+
+```bash
+# Database
+DATABASE_URL=postgresql://...
+REDIS_URL=redis://...
+
+# AI Providers
+GOOGLE_GENERATIVE_AI_API_KEY=...
+ANTHROPIC_API_KEY=...
+OPENAI_API_KEY=...
+
+# Search
+TAVILY_API_KEY=...
+```
