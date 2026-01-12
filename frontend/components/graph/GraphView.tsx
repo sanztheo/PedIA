@@ -286,6 +286,9 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
 
   const restartSimulation = useCallback(() => {
     if (!isSimulationRunning.current && simulateFnRef.current) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
       isSimulationRunning.current = true;
       stableFrames.current = 0;
       animationRef.current = requestAnimationFrame(simulateFnRef.current);
