@@ -157,13 +157,16 @@ export async function generatePage(
   let entities: ExtractedEntity[] = [];
 
   try {
-    entities = extractEntities(fullContent, 15);
+    // Use AI for entity extraction (more accurate)
+    entities = await extractEntitiesWithAI(fullContent, provider);
 
     for (const entity of entities.slice(0, 10)) {
       await emitter.entityFound({ name: entity.name, type: entity.type });
     }
   } catch (error) {
-    console.error("Entity extraction failed:", error);
+    console.error("AI entity extraction failed, using fallback:", error);
+    // Fallback to simple wiki-link extraction
+    entities = extractEntities(fullContent, 15);
   }
 
   await emitter.stepComplete("extract");
