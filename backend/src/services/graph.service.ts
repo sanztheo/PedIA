@@ -45,6 +45,7 @@ export const GraphService = {
       ...pages.map((p) => ({
         id: p.id,
         label: p.title,
+        slug: p.slug,
         type: "page" as const,
       })),
       ...entities.map((e) => ({
@@ -91,7 +92,7 @@ export const GraphService = {
 
     const page = await prisma.page.findUnique({
       where: { id: pageId },
-      select: { id: true, title: true },
+      select: { id: true, title: true, slug: true },
     });
 
     if (!page) {
@@ -122,6 +123,7 @@ export const GraphService = {
       {
         id: page.id,
         label: page.title,
+        slug: page.slug,
         type: "page",
       },
     ];

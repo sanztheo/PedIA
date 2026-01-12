@@ -1,7 +1,7 @@
 import { Worker, Job } from "bullmq";
 import prisma from "../../lib/prisma";
 import { generatePage, type SSEEmitter } from "../../ai/agent";
-import { setCache } from "../../lib/redis";
+import { setCache, invalidateGraphCache } from "../../lib/redis";
 import {
   addExtractJob,
   getRedisUrl,
@@ -119,6 +119,7 @@ async function processEnrichJob(job: Job<EnrichJobData>) {
   await job.updateProgress(90);
 
   setCache(`page:${slug}`, page, 3600).catch(() => {});
+  invalidateGraphCache().catch(() => {});
 
   await addExtractJob({ pageId: page.id, content });
 

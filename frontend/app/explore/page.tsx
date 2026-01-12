@@ -66,14 +66,11 @@ function ExploreContent() {
 
   const handleNodeClick = useCallback(
     (node: GraphNode) => {
-      if (node.type === "page") {
-        const page = data?.nodes.find((n) => n.id === node.id);
-        if (page) {
-          router.push(`/wiki/${node.label.toLowerCase().replace(/\s+/g, "-")}`);
-        }
+      if (node.type === "page" && node.slug) {
+        router.push(`/wiki/${node.slug}`);
       }
     },
-    [router, data]
+    [router]
   );
 
   const handleZoomIn = useCallback(() => {

@@ -88,6 +88,9 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
   const offsetRef = useRef({ x: 0, y: 0 });
   const isDraggingCanvas = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
+  const stableFrames = useRef(0);
+  const isSimulationRunning = useRef(false);
+  const simulateFnRef = useRef<(() => void) | null>(null);
 
   const getFilteredData = useCallback(() => {
     if (!filters || filters.length === 0) {
@@ -186,7 +189,7 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
     const centerX = width / 2;
     const centerY = height / 2;
 
-    const simulate = () => {
+    const runSimulationStep = () => {
       const nodes = nodesRef.current;
       const links = linksRef.current;
 
@@ -227,6 +230,7 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
         link.targetNode.vy -= fy;
       }
 
+      let totalVelocity = 0;
       for (const node of nodes) {
         if (dragRef.current && node.id === dragRef.current.id) {
           node.vx = 0;
@@ -241,20 +245,52 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
 
         node.x = Math.max(20, Math.min(width - 20, node.x));
         node.y = Math.max(20, Math.min(height - 20, node.y));
+
+        totalVelocity += Math.abs(node.vx) + Math.abs(node.vy);
       }
 
+      return totalVelocity;
+    };
+
+    const simulate = () => {
+      if (!isSimulationRunning.current) return;
+
+      const totalVelocity = runSimulationStep();
       draw();
+
+      if (totalVelocity < 0.5) {
+        stableFrames.current++;
+        if (stableFrames.current > 60) {
+          isSimulationRunning.current = false;
+          return;
+        }
+      } else {
+        stableFrames.current = 0;
+      }
+
       animationRef.current = requestAnimationFrame(simulate);
     };
 
+    simulateFnRef.current = simulate;
+    isSimulationRunning.current = true;
+    stableFrames.current = 0;
     animationRef.current = requestAnimationFrame(simulate);
 
     return () => {
+      isSimulationRunning.current = false;
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
   }, [data, width, height, draw]);
+
+  const restartSimulation = useCallback(() => {
+    if (!isSimulationRunning.current && simulateFnRef.current) {
+      isSimulationRunning.current = true;
+      stableFrames.current = 0;
+      animationRef.current = requestAnimationFrame(simulateFnRef.current);
+    }
+  }, []);
 
   const screenToWorld = useCallback((screenX: number, screenY: number) => {
     const scale = scaleRef.current;
@@ -279,6 +315,7 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
         const dy = y - node.y;
         if (dx * dx + dy * dy < 144) {
           dragRef.current = node;
+          restartSimulation();
           return;
         }
       }
@@ -286,7 +323,7 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
       isDraggingCanvas.current = true;
       lastMousePos.current = { x: screenX, y: screenY };
     },
-    [screenToWorld]
+    [screenToWorld, restartSimulation]
   );
 
   const handleMouseMove = useCallback(

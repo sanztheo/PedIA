@@ -100,6 +100,7 @@ export interface PageWithEntities extends Page {
 export interface GraphNode {
   id: string;
   label: string;
+  slug?: string;
   type: "page" | "entity";
   entityType?: EntityType;
 }

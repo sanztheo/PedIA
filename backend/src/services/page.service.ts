@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { getCache, setCache, deleteCache } from "../lib/redis";
+import { getCache, setCache, deleteCache, invalidateGraphCache } from "../lib/redis";
 import type { Page, PageStatus } from "@prisma/client";
 
 const PAGE_CACHE_TTL = 3600;
@@ -38,6 +38,7 @@ export const PageService = {
     });
 
     await setCache(`page:${page.slug}`, page, PAGE_CACHE_TTL);
+    invalidateGraphCache().catch(() => {});
     return page;
   },
 
@@ -119,6 +120,7 @@ export const PageService = {
     });
 
     await deleteCache(`page:${page.slug}`);
+    invalidateGraphCache().catch(() => {});
     return page;
   },
 
@@ -133,6 +135,7 @@ export const PageService = {
     if (page) {
       await deleteCache(`page:${page.slug}`);
     }
+    invalidateGraphCache().catch(() => {});
   },
 
   async incrementViewCount(id: string): Promise<void> {

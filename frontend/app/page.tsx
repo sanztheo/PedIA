@@ -22,12 +22,6 @@ export default function Home() {
             >
               Explorer
             </Link>
-            <Link
-              href="/graph"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Graph
-            </Link>
           </nav>
         </div>
       </header>

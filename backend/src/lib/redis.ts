@@ -47,4 +47,19 @@ export async function deleteCache(key: string): Promise<void> {
   await redis.del(key);
 }
 
+export async function deleteCachePattern(pattern: string): Promise<number> {
+  if (!redis) return 0;
+  const keys = await redis.keys(pattern);
+  if (keys.length === 0) return 0;
+  return redis.del(...keys);
+}
+
+export async function invalidateGraphCache(): Promise<void> {
+  if (!redis) return;
+  await Promise.all([
+    deleteCachePattern("graph:full:*"),
+    deleteCachePattern("graph:local:*"),
+  ]);
+}
+
 export default redis;

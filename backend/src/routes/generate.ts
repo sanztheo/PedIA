@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { generatePage, type SSEEmitter } from "../ai/agent";
 import prisma from "../lib/prisma";
-import { setCache } from "../lib/redis";
+import { setCache, invalidateGraphCache } from "../lib/redis";
 import type { SSEEventType } from "../types";
 
 const app = new Hono();
@@ -157,6 +157,7 @@ app.get("/", async (c) => {
       setCache(`page:${slug}`, page, 3600).catch((err) => {
         console.error("Failed to cache page:", err);
       });
+      invalidateGraphCache().catch(() => {});
 
       await emitter.stepComplete("save");
 

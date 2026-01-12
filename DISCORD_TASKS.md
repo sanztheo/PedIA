@@ -34,7 +34,7 @@ pedia/
 - ✅ `frontend/app/search/page.tsx`
 - ✅ `frontend/lib/sse.ts` - fix: error handling SSE
 
----
+---****
 
 ## ~~Kofu - Backend Services + Routes~~ ✅ COMPLETE
 
