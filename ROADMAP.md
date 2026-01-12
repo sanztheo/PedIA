@@ -83,7 +83,7 @@
 - [ ] **Détection liens bidirectionnels** : Si page A mentionne B, vérifier que B mentionne A
 - [ ] **Worker verify** : Vérification périodique des liens existants
 - [ ] **Missing link detection** : Algorithme de prédiction (si A et B co-mentionnés souvent...)
-- [ ] **Queue dashboard** (Bull Board) : UI pour surveiller les queues
+- [x] **Queue dashboard** (Bull Board) : UI pour surveiller les queues
 - [ ] **Rate limiting enrichissement** : Éviter génération excessive
 - [ ] **Neo4j migration** (Phase 3+) : Quand graph > 10k nodes
 
@@ -175,7 +175,7 @@
 | Priorité | Tâche | Effort estimé |
 |----------|-------|---------------|
 | P0 | Implémenter embeddings + recherche sémantique | ~4h |
-| P0 | Dashboard Bull Board pour monitorer les queues | ~1h |
+| ~~P0~~ | ~~Dashboard Bull Board pour monitorer les queues~~ | ✅ Fait |
 | P1 | Détection liens bidirectionnels manquants | ~2h |
 | P1 | Panel sources avec liens sur pages wiki | ~2h |
 | P2 | Score de confiance visible | ~1h |
