@@ -4,6 +4,7 @@ import { generatePage, type SSEEmitter } from "../../ai/agent";
 import { setCache, invalidateGraphCache } from "../../lib/redis";
 import {
   addExtractJob,
+  addEmbedJob,
   getRedisUrl,
   PREFIX,
   type EnrichJobData,
@@ -66,55 +67,60 @@ async function processEnrichJob(job: Job<EnrichJobData>) {
 
   const title = entityName.charAt(0).toUpperCase() + entityName.slice(1);
 
-  const page = await prisma.$transaction(async (tx) => {
-    const savedPage = await tx.page.upsert({
-      where: { slug },
-      create: {
-        slug,
-        title,
-        content,
-        status: "PUBLISHED",
-      },
-      update: {
-        content,
-        status: "PUBLISHED",
-        updatedAt: new Date(),
-      },
-    });
-
-    for (const entity of entities) {
-      const normalizedName = entity.name.toLowerCase().trim();
-
-      const dbEntity = await tx.entity.upsert({
-        where: { normalizedName },
+  const page = await prisma.$transaction(
+    async (tx) => {
+      const savedPage = await tx.page.upsert({
+        where: { slug },
         create: {
-          name: entity.name,
-          normalizedName,
-          type: entity.type,
-        },
-        update: {},
-      });
-
-      await tx.pageEntity.upsert({
-        where: {
-          pageId_entityId: {
-            pageId: savedPage.id,
-            entityId: dbEntity.id,
-          },
-        },
-        create: {
-          pageId: savedPage.id,
-          entityId: dbEntity.id,
-          relevance: entity.relevance,
+          slug,
+          title,
+          content,
+          status: "PUBLISHED",
         },
         update: {
-          relevance: entity.relevance,
+          content,
+          status: "PUBLISHED",
+          updatedAt: new Date(),
         },
       });
-    }
 
-    return savedPage;
-  });
+      await Promise.all(
+        entities.map(async (entity) => {
+          const normalizedName = entity.name.toLowerCase().trim();
+
+          const dbEntity = await tx.entity.upsert({
+            where: { normalizedName },
+            create: {
+              name: entity.name,
+              normalizedName,
+              type: entity.type,
+            },
+            update: {},
+          });
+
+          await tx.pageEntity.upsert({
+            where: {
+              pageId_entityId: {
+                pageId: savedPage.id,
+                entityId: dbEntity.id,
+              },
+            },
+            create: {
+              pageId: savedPage.id,
+              entityId: dbEntity.id,
+              relevance: entity.relevance,
+            },
+            update: {
+              relevance: entity.relevance,
+            },
+          });
+        }),
+      );
+
+      return savedPage;
+    },
+    { timeout: 15000 },
+  );
 
   await job.updateProgress(90);
 
@@ -122,6 +128,7 @@ async function processEnrichJob(job: Job<EnrichJobData>) {
   invalidateGraphCache().catch(() => {});
 
   await addExtractJob({ pageId: page.id, content });
+  await addEmbedJob({ pageId: page.id, content });
 
   await job.updateProgress(100);
 
@@ -143,13 +150,21 @@ export function createEnrichWorker() {
     return null;
   }
 
+  const rateLimit = parseInt(process.env.ENRICH_RATE_LIMIT || "50", 10);
+
   const worker = new Worker<EnrichJobData>("enrich", processEnrichJob, {
     connection: { url: redisUrl },
     prefix: PREFIX,
     concurrency: 1,
     lockDuration: 180000,
     lockRenewTime: 90000,
+    limiter: {
+      max: rateLimit,
+      duration: 3600000,
+    },
   });
+
+  console.log(`[EnrichWorker] Rate limit: ${rateLimit} jobs/hour`);
 
   worker.on("completed", (job, result) => {
     if (result.skipped) {

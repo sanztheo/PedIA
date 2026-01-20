@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import prisma from "../lib/prisma";
 import { getCache, setCache } from "../lib/redis";
+import { EmbeddingService } from "../services/embedding.service";
 import type { SearchResult } from "../types";
 
 const app = new Hono();
@@ -27,7 +28,9 @@ app.get("/", async (c) => {
   }
 
   const cacheKey = `search:${searchTerm.toLowerCase()}:${limit}`;
-  const cached = await getCache<{ results: SearchResult[]; total: number }>(cacheKey);
+  const cached = await getCache<{ results: SearchResult[]; total: number }>(
+    cacheKey,
+  );
   if (cached) {
     return c.json(cached);
   }
@@ -96,6 +99,48 @@ app.get("/", async (c) => {
   await setCache(cacheKey, response, SEARCH_CACHE_TTL);
 
   return c.json(response);
+});
+
+app.get("/semantic", async (c) => {
+  const query = c.req.query("q");
+  const limitParam = c.req.query("limit");
+
+  if (!query || query.trim().length === 0) {
+    return c.json({ error: 'Query parameter "q" is required' }, 400);
+  }
+
+  const searchTerm = query.trim();
+
+  if (searchTerm.length > 200) {
+    return c.json({ error: "Query too long (max 200 characters)" }, 400);
+  }
+
+  const limit = limitParam ? Math.min(parseInt(limitParam, 10), 50) : 10;
+
+  if (Number.isNaN(limit) || limit < 1) {
+    return c.json({ error: "Invalid limit parameter" }, 400);
+  }
+
+  try {
+    const results = await EmbeddingService.hybridSearch(searchTerm, limit);
+
+    const searchResults: SearchResult[] = results.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      summary: r.summary,
+      score: r.score,
+    }));
+
+    return c.json({
+      results: searchResults,
+      total: searchResults.length,
+      searchType: "hybrid",
+    });
+  } catch (error) {
+    console.error("[Search] Semantic search failed:", error);
+    return c.json({ error: "Semantic search failed" }, 500);
+  }
 });
 
 export default app;

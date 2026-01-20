@@ -248,12 +248,11 @@ enum JobStatus {
 // ============================================
 
 model Embedding {
-  id         String   @id @default(uuid())
+  id         String                      @id @default(uuid())
   pageId     String
   chunkIndex Int
-  content    String   @db.Text
-  // Vector stocke via pgvector extension
-  // embedding Unsupported("vector(1536)")
+  content    String                      @db.Text
+  embedding  Unsupported("vector(1536)")?
 
   createdAt  DateTime @default(now())
 

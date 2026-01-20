@@ -55,15 +55,15 @@
 - [x] Couleurs par type d'entité
 - [x] Click sur nœud → navigation vers wiki
 
-### ❌ À faire
-- [ ] **Embeddings pgvector** : Implémenter la génération et stockage des embeddings
-- [ ] **Service Embedding** : Créer `EmbeddingService` pour chunk/embed/store
-- [ ] **API embedding** : Endpoint pour générer embeddings (OpenAI text-embedding-3-small)
-- [ ] **Recherche sémantique** : Modifier `/api/search` pour utiliser vector similarity
-- [ ] **Migration Qdrant** (optionnel) : Si pgvector insuffisant, migrer vers Qdrant Cloud
-- [ ] **Wikidata linking** : Lier entités à leurs QID Wikidata
-- [ ] **Minimap graph** : Vue d'ensemble dans le coin (optionnel)
-- [ ] **Graph 3D** (optionnel) : react-force-graph-3d
+    ### ❌ À faire
+    - [ ] **Embeddings pgvector** : Implémenter la génération et stockage des embeddings
+    - [ ] **Service Embedding** : Créer `EmbeddingService` pour chunk/embed/store
+    - [ ] **API embedding** : Endpoint pour générer embeddings (OpenAI text-embedding-3-small)
+    - [ ] **Recherche sémantique** : Modifier `/api/search` pour utiliser vector similarity
+    - [ ] **Migration Qdrant** (optionnel) : Si pgvector insuffisant, migrer vers Qdrant Cloud
+    - [ ] **Wikidata linking** : Lier entités à leurs QID Wikidata
+    - [ ] **Minimap graph** : Vue d'ensemble dans le coin (optionnel)
+    - [ ] **Graph 3D** (optionnel) : react-force-graph-3d
 
 ---
 
@@ -80,11 +80,11 @@
 - [x] Priorités des queues (extract: 10, link: 8, enrich: 5)
 
 ### ❌ À faire
-- [ ] **Détection liens bidirectionnels** : Si page A mentionne B, vérifier que B mentionne A
-- [ ] **Worker verify** : Vérification périodique des liens existants
-- [ ] **Missing link detection** : Algorithme de prédiction (si A et B co-mentionnés souvent...)
+- [x] **Détection liens bidirectionnels** : Si page A mentionne B, vérifier que B mentionne A
+- [x] **Worker verify** : Vérification périodique des liens existants
+- [x] **Missing link detection** : Algorithme de prédiction (si A et B co-mentionnés souvent...)
 - [x] **Queue dashboard** (Bull Board) : UI pour surveiller les queues
-- [ ] **Rate limiting enrichissement** : Éviter génération excessive
+- [x] **Rate limiting enrichissement** : Éviter génération excessive (env: ENRICH_RATE_LIMIT)
 - [ ] **Neo4j migration** (Phase 3+) : Quand graph > 10k nodes
 
 ---

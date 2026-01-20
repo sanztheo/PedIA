@@ -1,8 +1,24 @@
 import prisma from "../lib/prisma";
 import { getCache, setCache } from "../lib/redis";
 import type { GraphNode, GraphLink, GraphData } from "../types";
+import type { RelationType } from "@prisma/client";
 
 const GRAPH_CACHE_TTL = 1800;
+
+export interface MissingBacklink {
+  fromEntityId: string;
+  toEntityId: string;
+  existingRelationType: RelationType;
+  fromEntityName: string;
+  toEntityName: string;
+}
+
+export interface PredictedLink {
+  entityId: string;
+  entityName: string;
+  score: number;
+  commonNeighbors: number;
+}
 
 export interface GetFullGraphOptions {
   limit?: number;
@@ -10,36 +26,44 @@ export interface GetFullGraphOptions {
 }
 
 export const GraphService = {
-  async getFullGraph(options: GetFullGraphOptions = {}): Promise<GraphData & { total: number }> {
+  async getFullGraph(
+    options: GetFullGraphOptions = {},
+  ): Promise<GraphData & { total: number }> {
     const { limit = 100, offset = 0 } = options;
 
     const cacheKey = `graph:full:${limit}:${offset}`;
     const cached = await getCache<GraphData & { total: number }>(cacheKey);
     if (cached) return cached;
 
-    const [pages, entities, pageEntities, entityRelations, totalPages, totalEntities] =
-      await Promise.all([
-        prisma.page.findMany({
-          where: { status: "PUBLISHED" },
-          select: { id: true, title: true, slug: true },
-          orderBy: { createdAt: "desc" },
-          take: limit,
-          skip: offset,
-        }),
-        prisma.entity.findMany({
-          select: { id: true, name: true, type: true },
-          take: limit,
-          skip: offset,
-        }),
-        prisma.pageEntity.findMany({
-          select: { pageId: true, entityId: true },
-        }),
-        prisma.entityRelation.findMany({
-          select: { fromEntityId: true, toEntityId: true, type: true },
-        }),
-        prisma.page.count({ where: { status: "PUBLISHED" } }),
-        prisma.entity.count(),
-      ]);
+    const [
+      pages,
+      entities,
+      pageEntities,
+      entityRelations,
+      totalPages,
+      totalEntities,
+    ] = await Promise.all([
+      prisma.page.findMany({
+        where: { status: "PUBLISHED" },
+        select: { id: true, title: true, slug: true },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.entity.findMany({
+        select: { id: true, name: true, type: true },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.pageEntity.findMany({
+        select: { pageId: true, entityId: true },
+      }),
+      prisma.entityRelation.findMany({
+        select: { fromEntityId: true, toEntityId: true, type: true },
+      }),
+      prisma.page.count({ where: { status: "PUBLISHED" } }),
+      prisma.entity.count(),
+    ]);
 
     const nodes: GraphNode[] = [
       ...pages.map((p) => ({
@@ -67,7 +91,9 @@ export const GraphService = {
           type: "mentions",
         })),
       ...entityRelations
-        .filter((er) => nodeIds.has(er.fromEntityId) && nodeIds.has(er.toEntityId))
+        .filter(
+          (er) => nodeIds.has(er.fromEntityId) && nodeIds.has(er.toEntityId),
+        )
         .map((er) => ({
           source: er.fromEntityId,
           target: er.toEntityId,
@@ -110,7 +136,10 @@ export const GraphService = {
       depth > 1
         ? await prisma.entityRelation.findMany({
             where: {
-              OR: [{ fromEntityId: { in: entityIds } }, { toEntityId: { in: entityIds } }],
+              OR: [
+                { fromEntityId: { in: entityIds } },
+                { toEntityId: { in: entityIds } },
+              ],
             },
             include: {
               fromEntity: true,
@@ -205,7 +234,9 @@ export const GraphService = {
       }),
       prisma.entityRelation.findMany({
         where: { toEntityId: entityId },
-        include: { fromEntity: { select: { id: true, name: true, type: true } } },
+        include: {
+          fromEntity: { select: { id: true, name: true, type: true } },
+        },
       }),
     ]);
 
@@ -223,5 +254,175 @@ export const GraphService = {
     ];
 
     return { entity, relations };
+  },
+
+  async detectMissingBacklinks(pageId: string): Promise<MissingBacklink[]> {
+    const pageEntities = await prisma.pageEntity.findMany({
+      where: { pageId },
+      select: { entityId: true },
+    });
+
+    if (pageEntities.length === 0) {
+      return [];
+    }
+
+    const entityIds = pageEntities.map((pe) => pe.entityId);
+
+    const existingRelations = await prisma.entityRelation.findMany({
+      where: {
+        OR: [
+          { fromEntityId: { in: entityIds } },
+          { toEntityId: { in: entityIds } },
+        ],
+      },
+      include: {
+        fromEntity: { select: { id: true, name: true } },
+        toEntity: { select: { id: true, name: true } },
+      },
+    });
+
+    const missingBacklinks: MissingBacklink[] = [];
+    const relationSet = new Set<string>();
+
+    for (const rel of existingRelations) {
+      relationSet.add(`${rel.fromEntityId}:${rel.toEntityId}:${rel.type}`);
+    }
+
+    for (const rel of existingRelations) {
+      const reverseKey = `${rel.toEntityId}:${rel.fromEntityId}:${rel.type}`;
+      if (!relationSet.has(reverseKey)) {
+        missingBacklinks.push({
+          fromEntityId: rel.toEntityId,
+          toEntityId: rel.fromEntityId,
+          existingRelationType: rel.type,
+          fromEntityName: rel.toEntity.name,
+          toEntityName: rel.fromEntity.name,
+        });
+      }
+    }
+
+    return missingBacklinks;
+  },
+
+  async predictMissingLinks(
+    entityId: string,
+    limit: number = 10,
+  ): Promise<PredictedLink[]> {
+    const directRelations = await prisma.entityRelation.findMany({
+      where: {
+        OR: [{ fromEntityId: entityId }, { toEntityId: entityId }],
+      },
+      select: { fromEntityId: true, toEntityId: true },
+    });
+
+    const neighborIds = new Set<string>();
+    for (const rel of directRelations) {
+      if (rel.fromEntityId !== entityId) neighborIds.add(rel.fromEntityId);
+      if (rel.toEntityId !== entityId) neighborIds.add(rel.toEntityId);
+    }
+
+    if (neighborIds.size === 0) {
+      return [];
+    }
+
+    const secondDegreeRelations = await prisma.entityRelation.findMany({
+      where: {
+        OR: [
+          { fromEntityId: { in: Array.from(neighborIds) } },
+          { toEntityId: { in: Array.from(neighborIds) } },
+        ],
+        AND: [
+          { fromEntityId: { not: entityId } },
+          { toEntityId: { not: entityId } },
+        ],
+      },
+      include: {
+        fromEntity: { select: { id: true, name: true } },
+        toEntity: { select: { id: true, name: true } },
+      },
+    });
+
+    const candidateScores = new Map<
+      string,
+      { name: string; commonNeighbors: Set<string> }
+    >();
+
+    for (const rel of secondDegreeRelations) {
+      const candidateId =
+        neighborIds.has(rel.fromEntityId) && !neighborIds.has(rel.toEntityId)
+          ? rel.toEntityId
+          : neighborIds.has(rel.toEntityId) &&
+              !neighborIds.has(rel.fromEntityId)
+            ? rel.fromEntityId
+            : null;
+
+      if (!candidateId || candidateId === entityId) continue;
+
+      if (!candidateScores.has(candidateId)) {
+        const name =
+          candidateId === rel.fromEntityId
+            ? rel.fromEntity.name
+            : rel.toEntity.name;
+        candidateScores.set(candidateId, { name, commonNeighbors: new Set() });
+      }
+
+      const sharedNeighbor = neighborIds.has(rel.fromEntityId)
+        ? rel.fromEntityId
+        : rel.toEntityId;
+      candidateScores.get(candidateId)!.commonNeighbors.add(sharedNeighbor);
+    }
+
+    const predictions: PredictedLink[] = [];
+
+    for (const [candId, data] of candidateScores.entries()) {
+      const commonCount = data.commonNeighbors.size;
+      const jaccardScore =
+        commonCount / (neighborIds.size + commonCount - commonCount);
+
+      predictions.push({
+        entityId: candId,
+        entityName: data.name,
+        score: Math.min(jaccardScore, 0.99),
+        commonNeighbors: commonCount,
+      });
+    }
+
+    return predictions.sort((a, b) => b.score - a.score).slice(0, limit);
+  },
+
+  async createMissingBacklinks(
+    missingBacklinks: MissingBacklink[],
+  ): Promise<number> {
+    if (missingBacklinks.length === 0) return 0;
+
+    let created = 0;
+
+    for (const backlink of missingBacklinks) {
+      try {
+        await prisma.entityRelation.upsert({
+          where: {
+            fromEntityId_toEntityId_type: {
+              fromEntityId: backlink.fromEntityId,
+              toEntityId: backlink.toEntityId,
+              type: backlink.existingRelationType,
+            },
+          },
+          update: {
+            strength: { increment: 0.1 },
+          },
+          create: {
+            fromEntityId: backlink.fromEntityId,
+            toEntityId: backlink.toEntityId,
+            type: backlink.existingRelationType,
+            strength: 0.5,
+          },
+        });
+        created++;
+      } catch {
+        continue;
+      }
+    }
+
+    return created;
   },
 };

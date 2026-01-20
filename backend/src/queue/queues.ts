@@ -28,6 +28,16 @@ export interface EnrichJobData {
   entityType: EntityType;
 }
 
+export interface VerifyJobData {
+  pageId?: string;
+  fullScan?: boolean;
+}
+
+export interface EmbedJobData {
+  pageId: string;
+  content: string;
+}
+
 export const extractQueue = connectionOpts
   ? new Queue<ExtractJobData>("extract", connectionOpts)
   : null;
@@ -40,6 +50,14 @@ export const enrichQueue = connectionOpts
   ? new Queue<EnrichJobData>("enrich", connectionOpts)
   : null;
 
+export const verifyQueue = connectionOpts
+  ? new Queue<VerifyJobData>("verify", connectionOpts)
+  : null;
+
+export const embedQueue = connectionOpts
+  ? new Queue<EmbedJobData>("embed", connectionOpts)
+  : null;
+
 export const flowProducer = connectionOpts
   ? new FlowProducer(connectionOpts)
   : null;
@@ -48,6 +66,8 @@ export const queueEvents = {
   extract: connectionOpts ? new QueueEvents("extract", connectionOpts) : null,
   link: connectionOpts ? new QueueEvents("link", connectionOpts) : null,
   enrich: connectionOpts ? new QueueEvents("enrich", connectionOpts) : null,
+  verify: connectionOpts ? new QueueEvents("verify", connectionOpts) : null,
+  embed: connectionOpts ? new QueueEvents("embed", connectionOpts) : null,
 };
 
 export function getRedisUrl() {
@@ -96,16 +116,48 @@ export async function addEnrichJob(data: EnrichJobData) {
   });
 }
 
+export async function addVerifyJob(data: VerifyJobData = {}) {
+  if (!verifyQueue) {
+    console.warn("Queue not available, skipping verify job");
+    return null;
+  }
+
+  return verifyQueue.add("verify-links", data, {
+    attempts: 2,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: { age: 3600 },
+    removeOnFail: false,
+  });
+}
+
+export async function addEmbedJob(data: EmbedJobData) {
+  if (!embedQueue) {
+    console.warn("Queue not available, skipping embed job");
+    return null;
+  }
+
+  return embedQueue.add("embed-page", data, {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 3000 },
+    removeOnComplete: { age: 3600 },
+    removeOnFail: false,
+  });
+}
+
 export async function closeQueues() {
   const closeTasks = [];
 
   if (extractQueue) closeTasks.push(extractQueue.close());
   if (linkQueue) closeTasks.push(linkQueue.close());
   if (enrichQueue) closeTasks.push(enrichQueue.close());
+  if (verifyQueue) closeTasks.push(verifyQueue.close());
+  if (embedQueue) closeTasks.push(embedQueue.close());
   if (flowProducer) closeTasks.push(flowProducer.close());
   if (queueEvents.extract) closeTasks.push(queueEvents.extract.close());
   if (queueEvents.link) closeTasks.push(queueEvents.link.close());
   if (queueEvents.enrich) closeTasks.push(queueEvents.enrich.close());
+  if (queueEvents.verify) closeTasks.push(queueEvents.verify.close());
+  if (queueEvents.embed) closeTasks.push(queueEvents.embed.close());
 
   await Promise.all(closeTasks);
 }
@@ -115,15 +167,18 @@ export async function getQueueStats() {
     return null;
   }
 
-  const [extractCounts, linkCounts, enrichCounts] = await Promise.all([
-    extractQueue.getJobCounts(),
-    linkQueue.getJobCounts(),
-    enrichQueue.getJobCounts(),
-  ]);
+  const [extractCounts, linkCounts, enrichCounts, verifyCounts] =
+    await Promise.all([
+      extractQueue.getJobCounts(),
+      linkQueue.getJobCounts(),
+      enrichQueue.getJobCounts(),
+      verifyQueue?.getJobCounts(),
+    ]);
 
   return {
     extract: extractCounts,
     link: linkCounts,
     enrich: enrichCounts,
+    verify: verifyCounts,
   };
 }
