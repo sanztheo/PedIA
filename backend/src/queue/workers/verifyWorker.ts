@@ -6,6 +6,10 @@ import { getRedisUrl, PREFIX, type VerifyJobData } from "../queues";
 
 const BATCH_SIZE = 50;
 const MIN_PREDICTION_SCORE = 0.3;
+const MAX_ENTITIES_PER_PAGE = parseInt(
+  process.env.VERIFY_MAX_ENTITIES || "10",
+  10,
+);
 
 async function processVerifyJob(job: Job<VerifyJobData>) {
   const { pageId, fullScan } = job.data;
@@ -16,49 +20,68 @@ async function processVerifyJob(job: Job<VerifyJobData>) {
   let predictedLinksCreated = 0;
 
   if (pageId) {
-    const missingBacklinks = await GraphService.detectMissingBacklinks(pageId);
-    await job.updateProgress(30);
+    try {
+      const missingBacklinks =
+        await GraphService.detectMissingBacklinks(pageId);
+      await job.updateProgress(30);
 
-    missingBacklinksCreated =
-      await GraphService.createMissingBacklinks(missingBacklinks);
-    await job.updateProgress(60);
+      missingBacklinksCreated =
+        await GraphService.createMissingBacklinks(missingBacklinks);
+      await job.updateProgress(60);
+    } catch (error) {
+      console.error(
+        `[VerifyWorker] Failed to process backlinks for page ${pageId}:`,
+        error,
+      );
+    }
 
-    const pageEntities = await prisma.pageEntity.findMany({
-      where: { pageId },
-      select: { entityId: true },
-      take: 10,
-    });
+    try {
+      const pageEntities = await prisma.pageEntity.findMany({
+        where: { pageId },
+        select: { entityId: true },
+        take: MAX_ENTITIES_PER_PAGE,
+      });
 
-    for (const { entityId } of pageEntities) {
-      const predictions = await GraphService.predictMissingLinks(entityId, 5);
+      const upsertPromises: Promise<unknown>[] = [];
 
-      for (const prediction of predictions) {
-        if (prediction.score < MIN_PREDICTION_SCORE) continue;
+      for (const { entityId } of pageEntities) {
+        const predictions = await GraphService.predictMissingLinks(entityId, 5);
 
-        try {
-          await prisma.entityRelation.upsert({
-            where: {
-              fromEntityId_toEntityId_type: {
-                fromEntityId: entityId,
-                toEntityId: prediction.entityId,
-                type: "RELATED_TO",
-              },
-            },
-            update: {
-              strength: { increment: 0.05 },
-            },
-            create: {
-              fromEntityId: entityId,
-              toEntityId: prediction.entityId,
-              type: "RELATED_TO",
-              strength: prediction.score,
-            },
-          });
-          predictedLinksCreated++;
-        } catch {
-          continue;
+        for (const prediction of predictions) {
+          if (prediction.score < MIN_PREDICTION_SCORE) continue;
+
+          upsertPromises.push(
+            prisma.entityRelation
+              .upsert({
+                where: {
+                  fromEntityId_toEntityId_type: {
+                    fromEntityId: entityId,
+                    toEntityId: prediction.entityId,
+                    type: "RELATED_TO",
+                  },
+                },
+                update: {
+                  strength: { increment: 0.05 },
+                },
+                create: {
+                  fromEntityId: entityId,
+                  toEntityId: prediction.entityId,
+                  type: "RELATED_TO",
+                  strength: prediction.score,
+                },
+              })
+              .catch(() => null),
+          );
         }
       }
+
+      const results = await Promise.all(upsertPromises);
+      predictedLinksCreated = results.filter((r) => r !== null).length;
+    } catch (error) {
+      console.error(
+        `[VerifyWorker] Failed to predict links for page ${pageId}:`,
+        error,
+      );
     }
 
     await job.updateProgress(90);
@@ -72,21 +95,44 @@ async function processVerifyJob(job: Job<VerifyJobData>) {
 
     await job.updateProgress(10);
 
+    if (pages.length === 0) {
+      await job.updateProgress(100);
+      return {
+        pageId: "full-scan",
+        missingBacklinksCreated: 0,
+        predictedLinksCreated: 0,
+      };
+    }
+
     const progressPerPage = 80 / pages.length;
 
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i];
-      const missingBacklinks = await GraphService.detectMissingBacklinks(
-        page.id,
-      );
-      const created =
-        await GraphService.createMissingBacklinks(missingBacklinks);
-      missingBacklinksCreated += created;
+      try {
+        const missingBacklinks = await GraphService.detectMissingBacklinks(
+          page.id,
+        );
+        const created =
+          await GraphService.createMissingBacklinks(missingBacklinks);
+        missingBacklinksCreated += created;
+      } catch (error) {
+        console.error(
+          `[VerifyWorker] Failed to process page ${page.id}:`,
+          error,
+        );
+      }
 
       await job.updateProgress(10 + Math.round((i + 1) * progressPerPage));
     }
 
     await job.updateProgress(90);
+  } else {
+    await job.updateProgress(100);
+    return {
+      pageId: "none",
+      missingBacklinksCreated: 0,
+      predictedLinksCreated: 0,
+    };
   }
 
   invalidateGraphCache().catch(() => {});

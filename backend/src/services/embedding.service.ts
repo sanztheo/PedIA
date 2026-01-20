@@ -124,23 +124,26 @@ export const EmbeddingService = {
 
     const embeddings = await this.generateEmbeddings(chunks);
 
-    await prisma.embedding.deleteMany({ where: { pageId } });
+    await prisma.$transaction(async (tx) => {
+      await tx.embedding.deleteMany({ where: { pageId } });
 
-    for (let i = 0; i < chunks.length; i++) {
-      const embeddingVector = `[${embeddings[i].join(",")}]`;
-
-      await prisma.$executeRaw`
-        INSERT INTO "Embedding" (id, "pageId", "chunkIndex", content, embedding, "createdAt")
-        VALUES (
-          gen_random_uuid(),
-          ${pageId},
-          ${i},
-          ${chunks[i]},
-          ${embeddingVector}::vector,
-          NOW()
-        )
-      `;
-    }
+      await Promise.all(
+        chunks.map((chunk, i) => {
+          const embeddingVector = `[${embeddings[i].join(",")}]`;
+          return tx.$executeRaw`
+            INSERT INTO "Embedding" (id, "pageId", "chunkIndex", content, embedding, "createdAt")
+            VALUES (
+              gen_random_uuid(),
+              ${pageId},
+              ${i},
+              ${chunk},
+              ${embeddingVector}::vector,
+              NOW()
+            )
+          `;
+        }),
+      );
+    });
 
     await deleteCache(`page:${pageId}:embeddings`);
 
@@ -223,19 +226,28 @@ export const EmbeddingService = {
         fulltext_rank: number | null;
       }>
     >`
-      WITH vector_search AS (
-        SELECT DISTINCT ON (p.id)
+      WITH page_vectors AS (
+        SELECT
           p.id,
           p.slug,
           p.title,
           p.summary,
-          ROW_NUMBER() OVER (ORDER BY MIN(e.embedding <=> ${embeddingVector}::vector)) AS vector_rank
+          MIN(e.embedding <=> ${embeddingVector}::vector) AS min_distance
         FROM "Page" p
         JOIN "Embedding" e ON p.id = e."pageId"
         WHERE p.status = 'PUBLISHED'
           AND e.embedding IS NOT NULL
         GROUP BY p.id, p.slug, p.title, p.summary
-        ORDER BY p.id, MIN(e.embedding <=> ${embeddingVector}::vector)
+      ),
+      vector_search AS (
+        SELECT
+          id,
+          slug,
+          title,
+          summary,
+          ROW_NUMBER() OVER (ORDER BY min_distance) AS vector_rank
+        FROM page_vectors
+        ORDER BY min_distance
         LIMIT 50
       ),
       fulltext_search AS (

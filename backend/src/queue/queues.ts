@@ -167,12 +167,13 @@ export async function getQueueStats() {
     return null;
   }
 
-  const [extractCounts, linkCounts, enrichCounts, verifyCounts] =
+  const [extractCounts, linkCounts, enrichCounts, verifyCounts, embedCounts] =
     await Promise.all([
       extractQueue.getJobCounts(),
       linkQueue.getJobCounts(),
       enrichQueue.getJobCounts(),
       verifyQueue?.getJobCounts(),
+      embedQueue?.getJobCounts(),
     ]);
 
   return {
@@ -180,5 +181,6 @@ export async function getQueueStats() {
     link: linkCounts,
     enrich: enrichCounts,
     verify: verifyCounts,
+    embed: embedCounts,
   };
 }

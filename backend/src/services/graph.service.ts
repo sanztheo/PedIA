@@ -4,6 +4,7 @@ import type { GraphNode, GraphLink, GraphData } from "../types";
 import type { RelationType } from "@prisma/client";
 
 const GRAPH_CACHE_TTL = 1800;
+const MAX_SECOND_DEGREE_RELATIONS = 500;
 
 export interface MissingBacklink {
   fromEntityId: string;
@@ -289,6 +290,8 @@ export const GraphService = {
     }
 
     for (const rel of existingRelations) {
+      if (rel.fromEntityId === rel.toEntityId) continue;
+
       const reverseKey = `${rel.toEntityId}:${rel.fromEntityId}:${rel.type}`;
       if (!relationSet.has(reverseKey)) {
         missingBacklinks.push({
@@ -340,6 +343,7 @@ export const GraphService = {
         fromEntity: { select: { id: true, name: true } },
         toEntity: { select: { id: true, name: true } },
       },
+      take: MAX_SECOND_DEGREE_RELATIONS,
     });
 
     const candidateScores = new Map<
@@ -348,13 +352,19 @@ export const GraphService = {
     >();
 
     for (const rel of secondDegreeRelations) {
-      const candidateId =
-        neighborIds.has(rel.fromEntityId) && !neighborIds.has(rel.toEntityId)
-          ? rel.toEntityId
-          : neighborIds.has(rel.toEntityId) &&
-              !neighborIds.has(rel.fromEntityId)
-            ? rel.fromEntityId
-            : null;
+      let candidateId: string | null = null;
+
+      if (
+        neighborIds.has(rel.fromEntityId) &&
+        !neighborIds.has(rel.toEntityId)
+      ) {
+        candidateId = rel.toEntityId;
+      } else if (
+        neighborIds.has(rel.toEntityId) &&
+        !neighborIds.has(rel.fromEntityId)
+      ) {
+        candidateId = rel.fromEntityId;
+      }
 
       if (!candidateId || candidateId === entityId) continue;
 
@@ -376,8 +386,9 @@ export const GraphService = {
 
     for (const [candId, data] of candidateScores.entries()) {
       const commonCount = data.commonNeighbors.size;
-      const jaccardScore =
-        commonCount / (neighborIds.size + commonCount - commonCount);
+      const candidateNeighborCount = data.commonNeighbors.size;
+      const unionSize = neighborIds.size + candidateNeighborCount - commonCount;
+      const jaccardScore = unionSize > 0 ? commonCount / unionSize : 0;
 
       predictions.push({
         entityId: candId,
@@ -395,11 +406,9 @@ export const GraphService = {
   ): Promise<number> {
     if (missingBacklinks.length === 0) return 0;
 
-    let created = 0;
-
-    for (const backlink of missingBacklinks) {
-      try {
-        await prisma.entityRelation.upsert({
+    const upsertPromises = missingBacklinks.map((backlink) =>
+      prisma.entityRelation
+        .upsert({
           where: {
             fromEntityId_toEntityId_type: {
               fromEntityId: backlink.fromEntityId,
@@ -416,13 +425,12 @@ export const GraphService = {
             type: backlink.existingRelationType,
             strength: 0.5,
           },
-        });
-        created++;
-      } catch {
-        continue;
-      }
-    }
+        })
+        .then(() => true)
+        .catch(() => false),
+    );
 
-    return created;
+    const results = await Promise.all(upsertPromises);
+    return results.filter(Boolean).length;
   },
 };
