@@ -5,8 +5,8 @@
 | Phase | Statut | Description |
 |-------|--------|-------------|
 | Phase 1 - MVP Core | ✅ **Complète** | Infrastructure de base, génération AI, UI principale |
-| Phase 2 - Search & Graph | 🔶 **Partielle** | Recherche sémantique, graph avancé |
-| Phase 3 - Auto-Evolution | 🔶 **Partielle** | Queue workers, enrichissement auto |
+| Phase 2 - Search & Graph | ✅ **Complète** | Recherche sémantique, graph avancé |
+| Phase 3 - Auto-Evolution | ✅ **Complète** | Queue workers, enrichissement auto |
 | Phase 4 - Quality & Trust | ❌ **À faire** | Vérification sources, bias detection |
 | Phase 5 - Edition & Versioning | ❌ **À faire** | Édition par zones, historique |
 | Phase 6 - Production | ❌ **À faire** | Auth, monitoring, optimisation |
@@ -42,7 +42,7 @@
 
 ---
 
-## Phase 2 - Search & Graph 🔶 EN COURS
+## Phase 2 - Search & Graph ✅ COMPLÈTE
 
 **Objectif** : Recherche sémantique et visualisation avancée
 
@@ -54,38 +54,38 @@
 - [x] Graph local centré sur une page (`/explore?page={id}`)
 - [x] Couleurs par type d'entité
 - [x] Click sur nœud → navigation vers wiki
+- [x] **Embeddings pgvector** : Migration SQL + colonne vector(1536) + index HNSW
+- [x] **Service Embedding** : `EmbeddingService` avec chunking markdown (800 tokens), génération OpenAI text-embedding-3-small
+- [x] **Recherche sémantique** : Endpoint `/api/search/semantic` avec hybrid search RRF (vector + full-text)
+- [x] **Worker embedding** : `embedWorker` BullMQ pour génération async des embeddings
 
-    ### ❌ À faire
-    - [ ] **Embeddings pgvector** : Implémenter la génération et stockage des embeddings
-    - [ ] **Service Embedding** : Créer `EmbeddingService` pour chunk/embed/store
-    - [ ] **API embedding** : Endpoint pour générer embeddings (OpenAI text-embedding-3-small)
-    - [ ] **Recherche sémantique** : Modifier `/api/search` pour utiliser vector similarity
-    - [ ] **Migration Qdrant** (optionnel) : Si pgvector insuffisant, migrer vers Qdrant Cloud
-    - [ ] **Wikidata linking** : Lier entités à leurs QID Wikidata
-    - [ ] **Minimap graph** : Vue d'ensemble dans le coin (optionnel)
-    - [ ] **Graph 3D** (optionnel) : react-force-graph-3d
+### ❌ À faire (optionnel)
+- [ ] **Migration Qdrant** : Si pgvector insuffisant à grande échelle
+- [ ] **Wikidata linking** : Lier entités à leurs QID Wikidata
+- [ ] **Minimap graph** : Vue d'ensemble dans le coin
+- [ ] **Graph 3D** : react-force-graph-3d
 
 ---
 
-## Phase 3 - Auto-Evolution 🔶 EN COURS
+## Phase 3 - Auto-Evolution ✅ COMPLÈTE
 
 **Objectif** : Enrichissement automatique et graph de connaissances vivant
 
 ### ✅ Fait
-- [x] BullMQ setup (3 queues: extract, link, enrich)
+- [x] BullMQ setup (5 queues: extract, link, enrich, verify, embed)
 - [x] ExtractWorker : Extraction entités AI + fallback regex
 - [x] LinkWorker : Déduplication + création relations entre entités co-occurrentes
 - [x] EnrichWorker : Génération pages pour entités importantes (PERSON, ORG, LOCATION, EVENT)
-- [x] Pipeline automatique : Page créée → Extract → Link → Enrich → (loop)
-- [x] Priorités des queues (extract: 10, link: 8, enrich: 5)
+- [x] EmbedWorker : Génération embeddings async pour recherche sémantique
+- [x] VerifyWorker : Vérification périodique des liens existants
+- [x] Pipeline automatique : Page créée → Extract → Link → Enrich + Embed → (loop)
+- [x] Détection liens bidirectionnels : Si page A mentionne B, vérifier que B mentionne A
+- [x] Missing link detection : Algorithme de prédiction (si A et B co-mentionnés souvent...)
+- [x] Queue dashboard (Bull Board) : UI pour surveiller les queues `/admin/queues`
+- [x] Rate limiting enrichissement : Éviter génération excessive (env: ENRICH_RATE_LIMIT)
 
-### ❌ À faire
-- [x] **Détection liens bidirectionnels** : Si page A mentionne B, vérifier que B mentionne A
-- [x] **Worker verify** : Vérification périodique des liens existants
-- [x] **Missing link detection** : Algorithme de prédiction (si A et B co-mentionnés souvent...)
-- [x] **Queue dashboard** (Bull Board) : UI pour surveiller les queues
-- [x] **Rate limiting enrichissement** : Éviter génération excessive (env: ENRICH_RATE_LIMIT)
-- [ ] **Neo4j migration** (Phase 3+) : Quand graph > 10k nodes
+### ❌ À faire (optionnel)
+- [ ] **Neo4j migration** : Quand graph > 10k nodes
 
 ---
 
@@ -172,28 +172,34 @@
 
 ## 🎯 Prochaines Étapes Recommandées
 
-| Priorité | Tâche | Effort estimé |
-|----------|-------|---------------|
-| P0 | Implémenter embeddings + recherche sémantique | ~4h |
+| Priorité | Tâche | Statut |
+|----------|-------|--------|
+| ~~P0~~ | ~~Implémenter embeddings + recherche sémantique~~ | ✅ Fait |
 | ~~P0~~ | ~~Dashboard Bull Board pour monitorer les queues~~ | ✅ Fait |
-| P1 | Détection liens bidirectionnels manquants | ~2h |
-| P1 | Panel sources avec liens sur pages wiki | ~2h |
-| P2 | Score de confiance visible | ~1h |
-| P2 | Bouton "Signaler un problème" | ~1h |
-| P3 | Auth (Clerk recommandé) | ~3h |
-| P3 | Tests E2E flow principal | ~3h |
+| ~~P1~~ | ~~Détection liens bidirectionnels manquants~~ | ✅ Fait |
+| P1 | Panel sources avec liens sur pages wiki | À faire |
+| P2 | Score de confiance visible | À faire |
+| P2 | Bouton "Signaler un problème" | À faire |
+| P3 | Auth (Clerk recommandé) | À faire |
+| P3 | Tests E2E flow principal | À faire |
 
 ---
 
-## 📁 Fichiers Clés à Créer
+## 📁 Fichiers Clés
 
+### ✅ Créés
 ```
-backend/src/services/embedding.service.ts    # Service embeddings
+backend/src/services/embedding.service.ts    # Service embeddings (chunking, OpenAI, pgvector, hybrid search)
+backend/src/queue/workers/embedWorker.ts     # Worker génération embeddings
+backend/src/queue/workers/verifyWorker.ts    # Worker vérification liens
+backend/prisma/migrations/0_init_pgvector.sql # Migration pgvector + index HNSW
+```
+
+### ❌ À créer
+```
 backend/src/lib/qdrant.ts                    # Client Qdrant (si migration)
-backend/src/queue/workers/verifyWorker.ts   # Worker vérification liens
-frontend/components/wiki/SourcesPanel.tsx   # Affichage sources
-frontend/components/wiki/ReportButton.tsx   # Signalement
-frontend/app/admin/queues/page.tsx          # Dashboard Bull Board
+frontend/components/wiki/SourcesPanel.tsx    # Affichage sources
+frontend/components/wiki/ReportButton.tsx    # Signalement
 ```
 
 ---
@@ -202,13 +208,13 @@ frontend/app/admin/queues/page.tsx          # Dashboard Bull Board
 
 ```
 Phase 1 ████████████████████ 100%
-Phase 2 ████████████░░░░░░░░  60%
-Phase 3 ██████████████░░░░░░  70%
+Phase 2 ████████████████████ 100%
+Phase 3 ████████████████████ 100%
 Phase 4 ░░░░░░░░░░░░░░░░░░░░   0%
 Phase 5 ░░░░░░░░░░░░░░░░░░░░   0%
 Phase 6 ░░░░░░░░░░░░░░░░░░░░   0%
 
-Total   ████████░░░░░░░░░░░░  38%
+Total   ██████████░░░░░░░░░░  50%
 ```
 
 ---
@@ -229,4 +235,4 @@ Total   ████████░░░░░░░░░░░░  38%
 
 ---
 
-*Dernière mise à jour : Janvier 2026*
+*Dernière mise à jour : 20 Janvier 2026*
