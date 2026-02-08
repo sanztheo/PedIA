@@ -4,7 +4,8 @@ import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { HonoAdapter } from "@bull-board/hono";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { extractQueue, linkQueue, enrichQueue } from "../queue/queues";
+import { extractQueue, linkQueue, enrichQueue, verifyQueue } from "../queue/queues";
+import { embeddingService } from "../services/embedding.service";
 
 // Basic Auth middleware
 const adminSecret = process.env.ADMIN_SECRET || "admin";
@@ -22,6 +23,7 @@ const queues: BullMQAdapter[] = [];
 if (extractQueue) queues.push(new BullMQAdapter(extractQueue));
 if (linkQueue) queues.push(new BullMQAdapter(linkQueue));
 if (enrichQueue) queues.push(new BullMQAdapter(enrichQueue));
+if (verifyQueue) queues.push(new BullMQAdapter(verifyQueue));
 
 if (queues.length > 0) {
   createBullBoard({
@@ -57,5 +59,31 @@ admin.get("/status", auth, async (c) => {
   });
 });
 
+admin.post("/reindex", auth, async (c) => {
+  try {
+    const result = await embeddingService.reindexAllPages();
+    return c.json({
+      success: true,
+      indexed: result.indexed,
+      failed: result.failed,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return c.json({ success: false, error: message }, 500);
+  }
+});
+
+admin.post("/reindex/:pageId", auth, async (c) => {
+  const pageId = c.req.param("pageId");
+  try {
+    await embeddingService.indexPage(pageId);
+    return c.json({ success: true, pageId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return c.json({ success: false, error: message }, 500);
+  }
+});
+
 export default admin;
 export { auth as adminAuth };
+

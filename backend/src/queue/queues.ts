@@ -40,6 +40,16 @@ export const enrichQueue = connectionOpts
   ? new Queue<EnrichJobData>("enrich", connectionOpts)
   : null;
 
+export interface VerifyJobData {
+  pageId: string;
+  checkBidirectional: boolean;
+  checkMissingLinks: boolean;
+}
+
+export const verifyQueue = connectionOpts
+  ? new Queue<VerifyJobData>("verify", connectionOpts)
+  : null;
+
 export const flowProducer = connectionOpts
   ? new FlowProducer(connectionOpts)
   : null;
@@ -48,6 +58,7 @@ export const queueEvents = {
   extract: connectionOpts ? new QueueEvents("extract", connectionOpts) : null,
   link: connectionOpts ? new QueueEvents("link", connectionOpts) : null,
   enrich: connectionOpts ? new QueueEvents("enrich", connectionOpts) : null,
+  verify: connectionOpts ? new QueueEvents("verify", connectionOpts) : null,
 };
 
 export function getRedisUrl() {
@@ -96,34 +107,52 @@ export async function addEnrichJob(data: EnrichJobData) {
   });
 }
 
+export async function addVerifyJob(data: VerifyJobData) {
+  if (!verifyQueue) {
+    console.warn("Queue not available, skipping verify job");
+    return null;
+  }
+
+  return verifyQueue.add("verify-links", data, {
+    attempts: 2,
+    backoff: { type: "exponential", delay: 3000 },
+    removeOnComplete: { age: 3600 },
+    removeOnFail: false,
+  });
+}
+
 export async function closeQueues() {
   const closeTasks = [];
 
   if (extractQueue) closeTasks.push(extractQueue.close());
   if (linkQueue) closeTasks.push(linkQueue.close());
   if (enrichQueue) closeTasks.push(enrichQueue.close());
+  if (verifyQueue) closeTasks.push(verifyQueue.close());
   if (flowProducer) closeTasks.push(flowProducer.close());
   if (queueEvents.extract) closeTasks.push(queueEvents.extract.close());
   if (queueEvents.link) closeTasks.push(queueEvents.link.close());
   if (queueEvents.enrich) closeTasks.push(queueEvents.enrich.close());
+  if (queueEvents.verify) closeTasks.push(queueEvents.verify.close());
 
   await Promise.all(closeTasks);
 }
 
 export async function getQueueStats() {
-  if (!extractQueue || !linkQueue || !enrichQueue) {
+  if (!extractQueue || !linkQueue || !enrichQueue || !verifyQueue) {
     return null;
   }
 
-  const [extractCounts, linkCounts, enrichCounts] = await Promise.all([
+  const [extractCounts, linkCounts, enrichCounts, verifyCounts] = await Promise.all([
     extractQueue.getJobCounts(),
     linkQueue.getJobCounts(),
     enrichQueue.getJobCounts(),
+    verifyQueue.getJobCounts(),
   ]);
 
   return {
     extract: extractCounts,
     link: linkCounts,
     enrich: enrichCounts,
+    verify: verifyCounts,
   };
 }

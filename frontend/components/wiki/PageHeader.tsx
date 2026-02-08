@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ConfidenceBadge } from './ConfidenceBadge';
+import { GeneratedBadge } from './GeneratedBadge';
 
 interface PageHeaderProps {
   title: string;
@@ -15,6 +17,7 @@ interface PageHeaderProps {
   viewCount: number;
   status: PageStatus;
   pageId?: string;
+  confidenceScore?: number;
 }
 
 const statusConfig: Record<PageStatus, { label: string; className: string; dot: string }> = {
@@ -47,6 +50,7 @@ export function PageHeader({
   viewCount,
   status,
   pageId,
+  confidenceScore,
 }: PageHeaderProps) {
   const statusInfo = statusConfig[status];
   const createdDate = new Date(createdAt);
@@ -60,11 +64,17 @@ export function PageHeader({
       <div className="relative px-8 lg:px-12 py-10 lg:py-14">
         {/* Top bar with status and actions */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2">
-            <span className={cn('size-2 rounded-full', statusInfo.dot)} />
-            <span className={cn('text-sm font-medium', statusInfo.className)}>
-              {statusInfo.label}
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className={cn('size-2 rounded-full', statusInfo.dot)} />
+              <span className={cn('text-sm font-medium', statusInfo.className)}>
+                {statusInfo.label}
+              </span>
+            </div>
+            {confidenceScore !== undefined && (
+              <ConfidenceBadge score={confidenceScore} size="sm" />
+            )}
+            <GeneratedBadge generatedAt={createdAt} />
           </div>
 
           {pageId && (

@@ -34,6 +34,8 @@ model Page {
   incomingLinks PageLink[] @relation("TargetPage")
   // Embeddings
   embeddings    Embedding[]
+  // Reports
+  reports       Report[]
 
   @@index([slug])
   @@index([status])
@@ -262,3 +264,40 @@ model Embedding {
   @@unique([pageId, chunkIndex])
   @@index([pageId])
 }
+
+// ============================================
+// REPORTS - User feedback on pages
+// ============================================
+
+model Report {
+  id        String       @id @default(uuid())
+  pageId    String
+  type      ReportType
+  details   String?      @db.Text
+  status    ReportStatus @default(PENDING)
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@index([status])
+}
+
+enum ReportType {
+  INACCURATE
+  OUTDATED
+  INCOMPLETE
+  BIASED
+  SPAM
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  REJECTED
+}
+

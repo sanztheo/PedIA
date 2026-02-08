@@ -6,3 +6,6 @@ export type { CreateEntityInput, ListEntitiesOptions } from "./entity.service";
 
 export { GraphService } from "./graph.service";
 export type { GetFullGraphOptions } from "./graph.service";
+
+export { EmbeddingService, embeddingService } from "./embedding.service";
+

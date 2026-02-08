@@ -2,7 +2,8 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Add vector column to embeddings table (after Prisma migration)
--- ALTER TABLE "Embedding" ADD COLUMN embedding vector(1536);
+ALTER TABLE "Embedding" ADD COLUMN IF NOT EXISTS embedding vector(1536);
 
 -- Create HNSW index for fast similarity search
--- CREATE INDEX ON "Embedding" USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS embedding_vector_idx ON "Embedding" USING hnsw (embedding vector_cosine_ops);
+

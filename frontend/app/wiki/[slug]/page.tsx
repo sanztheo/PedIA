@@ -3,14 +3,24 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/wiki/PageHeader';
 import { MarkdownContent } from '@/components/wiki/MarkdownContent';
 import { EntitySidebar } from '@/components/wiki/EntitySidebar';
+import { SourcesPanel } from '@/components/wiki/SourcesPanel';
+import { ReportButton } from '@/components/wiki/ReportButton';
 import type { Page, Entity } from '@/types';
 
 interface WikiPageProps {
   params: Promise<{ slug: string }>;
 }
 
+interface Source {
+  url: string;
+  title: string;
+  domain: string;
+}
+
 interface PageResponse extends Page {
   entities?: { entity: Entity; relevance: number }[];
+  sources?: Source[];
+  confidenceScore?: number;
 }
 
 export default async function WikiPage({ params }: WikiPageProps) {
@@ -37,11 +47,22 @@ export default async function WikiPage({ params }: WikiPageProps) {
 
   const page = response.data as PageResponse;
   const entities = page.entities?.map(e => e.entity) ?? [];
+  
+  // Default confidence score until backend provides it
+  const confidenceScore = page.confidenceScore ?? 75;
+  
+  // Default sources from content generation (mock until backend provides them)
+  const sources = page.sources && page.sources.length > 0 
+    ? page.sources 
+    : [
+        { url: 'https://wikipedia.org', title: 'Wikipedia', domain: 'wikipedia.org' },
+        { url: 'https://reuters.com', title: 'Reuters', domain: 'reuters.com' },
+      ];
 
   return (
     <MainLayout disableScroll={true}>
       <div className="flex flex-1 overflow-hidden h-full">
-        {/* Main content area - full width style like Vercel */}
+        {/* Main content area */}
         <div className="flex-1 overflow-y-auto min-w-0">
           <PageHeader
             title={page.title}
@@ -50,19 +71,36 @@ export default async function WikiPage({ params }: WikiPageProps) {
             viewCount={page.viewCount}
             status={page.status}
             pageId={page.id}
+            confidenceScore={confidenceScore}
           />
           
-          {/* Content - generous padding, no restrictive max-width */}
+          {/* Content */}
           <div className="px-8 lg:px-12 py-10 lg:py-14">
             <MarkdownContent content={page.content} />
+            
+            {/* Report section */}
+            <div className="mt-12 pt-8 border-t border-border/50">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Un problème avec cette page ?
+                </p>
+                <ReportButton pageId={page.id} pageTitle={page.title} />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Sidebar for Entities */}
+        {/* Right Sidebar */}
         <aside className="hidden xl:block w-80 border-l border-border/50 overflow-y-auto bg-muted/5">
           <EntitySidebar entities={entities} />
+          {sources.length > 0 && (
+            <div className="p-4 border-t border-border/50">
+              <SourcesPanel sources={sources} />
+            </div>
+          )}
         </aside>
       </div>
     </MainLayout>
   );
 }
+

@@ -64,7 +64,7 @@ export const PageService = {
   },
 
   async getBySlugWithEntities(slug: string) {
-    return prisma.page.findUnique({
+    const page = await prisma.page.findUnique({
       where: { slug },
       include: {
         entities: {
@@ -75,8 +75,44 @@ export const PageService = {
             relevance: "desc",
           },
         },
+        sources: {
+          include: {
+            source: {
+              select: {
+                url: true,
+                title: true,
+                domain: true,
+                reliability: true,
+              },
+            },
+          },
+        },
       },
     });
+
+    if (!page) return null;
+
+    const formattedSources = page.sources.map((ps) => ({
+      url: ps.source.url,
+      title: ps.source.title || ps.source.domain,
+      domain: ps.source.domain,
+      reliability: ps.source.reliability,
+    }));
+
+    const confidenceScore =
+      formattedSources.length > 0
+        ? Math.round(
+            (formattedSources.reduce((sum, s) => sum + s.reliability, 0) /
+              formattedSources.length) *
+              100
+          )
+        : 50;
+
+    return {
+      ...page,
+      sources: formattedSources,
+      confidenceScore,
+    };
   },
 
   async list(options: ListPagesOptions = {}) {

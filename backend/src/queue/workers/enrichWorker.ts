@@ -149,6 +149,10 @@ export function createEnrichWorker() {
     concurrency: 1,
     lockDuration: 180000,
     lockRenewTime: 90000,
+    limiter: {
+      max: 10,
+      duration: 60000,
+    },
   });
 
   worker.on("completed", (job, result) => {

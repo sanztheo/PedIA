@@ -4,6 +4,7 @@ import {
 } from "./workers/extractWorker";
 import { createLinkWorker, closeLinkWorker } from "./workers/linkWorker";
 import { createEnrichWorker, closeEnrichWorker } from "./workers/enrichWorker";
+import { createVerifyWorker, closeVerifyWorker } from "./workers/verifyWorker";
 import { closeQueues, getQueueStats } from "./queues";
 import type { Worker } from "bullmq";
 
@@ -11,11 +12,13 @@ export * from "./queues";
 export { createExtractWorker } from "./workers/extractWorker";
 export { createLinkWorker } from "./workers/linkWorker";
 export { createEnrichWorker } from "./workers/enrichWorker";
+export { createVerifyWorker } from "./workers/verifyWorker";
 
 interface Workers {
   extract: Worker | null;
   link: Worker | null;
   enrich: Worker | null;
+  verify: Worker | null;
 }
 
 let workers: Workers | null = null;
@@ -32,6 +35,7 @@ export function startAllWorkers(): Workers {
     extract: createExtractWorker(),
     link: createLinkWorker(),
     enrich: createEnrichWorker(),
+    verify: createVerifyWorker(),
   };
 
   console.log("[Queue] All workers started");
@@ -51,6 +55,7 @@ export async function stopAllWorkers(): Promise<void> {
     closeExtractWorker(workers.extract),
     closeLinkWorker(workers.link),
     closeEnrichWorker(workers.enrich),
+    closeVerifyWorker(workers.verify),
   ]);
 
   await closeQueues();
