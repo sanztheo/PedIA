@@ -44,7 +44,7 @@
 
 ---
 
-## Phase 2 - Search & Graph 🔶 EN COURS
+## Phase 2 - Search & Graph ✅ COMPLÈTE
 
 **Objectif** : Recherche sémantique et visualisation avancée
 
@@ -57,6 +57,10 @@
 - [x] Graph local centré sur une page (`/explore?page={id}`)
 - [x] Couleurs par type d'entité
 - [x] Click sur nœud → navigation vers wiki
+- [x] **Embeddings pgvector** : Migration SQL + colonne vector(1536) + index HNSW
+- [x] **Service Embedding** : `EmbeddingService` avec chunking markdown (800 tokens), génération OpenAI text-embedding-3-small
+- [x] **Recherche sémantique** : Endpoint `/api/search/semantic` avec hybrid search RRF (vector + full-text)
+- [x] **Worker embedding** : `embedWorker` BullMQ pour génération async des embeddings
 
 ### ✅ Fait
 
@@ -66,12 +70,12 @@
 - [x] **Recherche sémantique** : Modifier `/api/search` pour utiliser vector similarity
 - [ ] **Migration Qdrant** (optionnel) : Si pgvector insuffisant, migrer vers Qdrant Cloud
 - [ ] **Wikidata linking** : Lier entités à leurs QID Wikidata
-- [ ] **Minimap graph** : Vue d'ensemble dans le coin (optionnel)
-- [ ] **Graph 3D** (optionnel) : react-force-graph-3d
+- [ ] **Minimap graph** : Vue d'ensemble dans le coin
+- [ ] **Graph 3D** : react-force-graph-3d
 
 ---
 
-## Phase 3 - Auto-Evolution 🔶 EN COURS
+## Phase 3 - Auto-Evolution ✅ COMPLÈTE
 
 **Objectif** : Enrichissement automatique et graph de connaissances vivant
 
@@ -81,8 +85,13 @@
 - [x] ExtractWorker : Extraction entités AI + fallback regex
 - [x] LinkWorker : Déduplication + création relations entre entités co-occurrentes
 - [x] EnrichWorker : Génération pages pour entités importantes (PERSON, ORG, LOCATION, EVENT)
-- [x] Pipeline automatique : Page créée → Extract → Link → Enrich → (loop)
-- [x] Priorités des queues (extract: 10, link: 8, enrich: 5)
+- [x] EmbedWorker : Génération embeddings async pour recherche sémantique
+- [x] VerifyWorker : Vérification périodique des liens existants
+- [x] Pipeline automatique : Page créée → Extract → Link → Enrich + Embed → (loop)
+- [x] Détection liens bidirectionnels : Si page A mentionne B, vérifier que B mentionne A
+- [x] Missing link detection : Algorithme de prédiction (si A et B co-mentionnés souvent...)
+- [x] Queue dashboard (Bull Board) : UI pour surveiller les queues `/admin/queues`
+- [x] Rate limiting enrichissement : Éviter génération excessive (env: ENRICH_RATE_LIMIT)
 
 ### ✅ À faire
 
@@ -202,15 +211,21 @@
 
 ---
 
-## 📁 Fichiers Clés à Créer
+## 📁 Fichiers Clés
 
+### ✅ Créés
 ```
-backend/src/services/embedding.service.ts    # Service embeddings
+backend/src/services/embedding.service.ts    # Service embeddings (chunking, OpenAI, pgvector, hybrid search)
+backend/src/queue/workers/embedWorker.ts     # Worker génération embeddings
+backend/src/queue/workers/verifyWorker.ts    # Worker vérification liens
+backend/prisma/migrations/0_init_pgvector.sql # Migration pgvector + index HNSW
+```
+
+### ❌ À créer
+```
 backend/src/lib/qdrant.ts                    # Client Qdrant (si migration)
-backend/src/queue/workers/verifyWorker.ts   # Worker vérification liens
-frontend/components/wiki/SourcesPanel.tsx   # Affichage sources
-frontend/components/wiki/ReportButton.tsx   # Signalement
-frontend/app/admin/queues/page.tsx          # Dashboard Bull Board
+frontend/components/wiki/SourcesPanel.tsx    # Affichage sources
+frontend/components/wiki/ReportButton.tsx    # Signalement
 ```
 
 ---
@@ -219,13 +234,13 @@ frontend/app/admin/queues/page.tsx          # Dashboard Bull Board
 
 ```
 Phase 1 ████████████████████ 100%
-Phase 2 ████████████░░░░░░░░  60%
-Phase 3 ██████████████░░░░░░  70%
+Phase 2 ████████████████████ 100%
+Phase 3 ████████████████████ 100%
 Phase 4 ░░░░░░░░░░░░░░░░░░░░   0%
 Phase 5 ░░░░░░░░░░░░░░░░░░░░   0%
 Phase 6 ░░░░░░░░░░░░░░░░░░░░   0%
 
-Total   ████████░░░░░░░░░░░░  38%
+Total   ██████████░░░░░░░░░░  50%
 ```
 
 ---

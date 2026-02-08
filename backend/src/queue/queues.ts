@@ -28,6 +28,16 @@ export interface EnrichJobData {
   entityType: EntityType;
 }
 
+export interface VerifyJobData {
+  pageId?: string;
+  fullScan?: boolean;
+}
+
+export interface EmbedJobData {
+  pageId: string;
+  content: string;
+}
+
 export const extractQueue = connectionOpts
   ? new Queue<ExtractJobData>("extract", connectionOpts)
   : null;
