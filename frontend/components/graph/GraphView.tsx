@@ -194,8 +194,8 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
       const links = linksRef.current;
 
       for (const node of nodes) {
-        node.vx += (centerX - node.x) * 0.001;
-        node.vy += (centerY - node.y) * 0.001;
+        node.vx += (centerX - node.x) * 0.0005;
+        node.vy += (centerY - node.y) * 0.0005;
       }
 
       for (let i = 0; i < nodes.length; i++) {
@@ -204,8 +204,8 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
           const dy = nodes[j].y - nodes[i].y;
           const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-          if (dist < 300) {
-            const force = 1000 / (dist * dist);
+          if (dist < 200) {
+            const force = 500 / (dist * dist);
             const fx = (dx / dist) * force;
             const fy = (dy / dist) * force;
             nodes[i].vx -= fx;
@@ -220,7 +220,7 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
         const dx = link.targetNode.x - link.sourceNode.x;
         const dy = link.targetNode.y - link.sourceNode.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const force = (dist - 100) * 0.01;
+        const force = (dist - 100) * 0.005;
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
 
@@ -238,8 +238,8 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
           continue;
         }
 
-        node.vx *= 0.9;
-        node.vy *= 0.9;
+        node.vx *= 0.7;
+        node.vy *= 0.7;
         node.x += node.vx;
         node.y += node.vy;
 
@@ -258,9 +258,9 @@ export const GraphView = forwardRef<GraphViewRef, GraphViewProps>(function Graph
       const totalVelocity = runSimulationStep();
       draw();
 
-      if (totalVelocity < 0.5) {
+      if (totalVelocity < 0.1) {
         stableFrames.current++;
-        if (stableFrames.current > 60) {
+        if (stableFrames.current > 30) {
           isSimulationRunning.current = false;
           return;
         }

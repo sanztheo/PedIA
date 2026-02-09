@@ -3,7 +3,6 @@ import { streamSSE } from "hono/streaming";
 import { generatePage, type SSEEmitter } from "../ai/agent";
 import prisma from "../lib/prisma";
 import { setCache, invalidateGraphCache } from "../lib/redis";
-import { addEmbedJob, addExtractJob } from "../queue";
 import type { SSEEventType } from "../types";
 
 const app = new Hono();
@@ -92,7 +91,7 @@ app.get("/", async (c) => {
     };
 
     try {
-      const { content, entities } = await generatePage(
+      const { content, entities, sources } = await generatePage(
         { query, provider: "google" },
         emitter,
       );
@@ -101,74 +100,93 @@ app.get("/", async (c) => {
 
       const title = titleFromQuery(query);
 
-      const page = await prisma.$transaction(
-        async (tx) => {
-          const savedPage = await tx.page.upsert({
-            where: { slug },
+      // Use transaction to ensure atomicity of page + entities + sources save
+      const page = await prisma.$transaction(async (tx) => {
+        // Create or update the page
+        const savedPage = await tx.page.upsert({
+          where: { slug },
+          create: {
+            slug,
+            title,
+            content,
+            status: "PUBLISHED",
+          },
+          update: {
+            content,
+            status: "PUBLISHED",
+            updatedAt: new Date(),
+          },
+        });
+
+        // Save all entities within the same transaction
+        for (const entity of entities) {
+          const normalizedName = entity.name.toLowerCase().trim();
+
+          const dbEntity = await tx.entity.upsert({
+            where: { normalizedName },
             create: {
-              slug,
-              title,
-              content,
-              status: "PUBLISHED",
+              name: entity.name,
+              normalizedName,
+              type: entity.type,
+            },
+            update: {},
+          });
+
+          await tx.pageEntity.upsert({
+            where: {
+              pageId_entityId: {
+                pageId: savedPage.id,
+                entityId: dbEntity.id,
+              },
+            },
+            create: {
+              pageId: savedPage.id,
+              entityId: dbEntity.id,
+              relevance: entity.relevance,
             },
             update: {
-              content,
-              status: "PUBLISHED",
-              updatedAt: new Date(),
+              relevance: entity.relevance,
+            },
+          });
+        }
+
+        // Save sources
+        for (const source of sources) {
+          const dbSource = await tx.source.upsert({
+            where: { url: source.url },
+            create: {
+              url: source.url,
+              title: source.title,
+              domain: source.domain,
+            },
+            update: {
+              title: source.title,
             },
           });
 
-          await Promise.all(
-            entities.map(async (entity) => {
-              const normalizedName = entity.name.toLowerCase().trim();
+          await tx.pageSource.upsert({
+            where: {
+              pageId_sourceId: {
+                pageId: savedPage.id,
+                sourceId: dbSource.id,
+              },
+            },
+            create: {
+              pageId: savedPage.id,
+              sourceId: dbSource.id,
+            },
+            update: {},
+          });
+        }
 
-              const dbEntity = await tx.entity.upsert({
-                where: { normalizedName },
-                create: {
-                  name: entity.name,
-                  normalizedName,
-                  type: entity.type,
-                },
-                update: {},
-              });
-
-              await tx.pageEntity.upsert({
-                where: {
-                  pageId_entityId: {
-                    pageId: savedPage.id,
-                    entityId: dbEntity.id,
-                  },
-                },
-                create: {
-                  pageId: savedPage.id,
-                  entityId: dbEntity.id,
-                  relevance: entity.relevance,
-                },
-                update: {
-                  relevance: entity.relevance,
-                },
-              });
-            }),
-          );
-
-          return savedPage;
-        },
-        { timeout: 15000 },
-      );
+        return savedPage;
+      }, { timeout: 40000 });
 
       // Cache outside transaction (non-critical, fire and forget)
       setCache(`page:${slug}`, page, 3600).catch((err) => {
         console.error("Failed to cache page:", err);
       });
       invalidateGraphCache().catch(() => {});
-
-      // Queue async jobs for extraction and embedding
-      addExtractJob({ pageId: page.id, content }).catch((err) => {
-        console.error("Failed to queue extract job:", err);
-      });
-      addEmbedJob({ pageId: page.id, content }).catch((err) => {
-        console.error("Failed to queue embed job:", err);
-      });
 
       await emitter.stepComplete("save");
 

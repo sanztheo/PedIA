@@ -3,7 +3,11 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/wiki/PageHeader';
 import { MarkdownContent } from '@/components/wiki/MarkdownContent';
 import { EntitySidebar } from '@/components/wiki/EntitySidebar';
-import type { Page, Entity } from '@/types';
+import { SourcesPanel } from '@/components/wiki/SourcesPanel';
+import { TableOfContents } from '@/components/wiki/TableOfContents';
+import { MobileEntitiesButton } from '@/components/wiki/MobileEntitiesButton';
+import { Separator } from '@/components/ui/separator';
+import type { Page, Entity, Source } from '@/types';
 
 interface WikiPageProps {
   params: Promise<{ slug: string }>;
@@ -11,6 +15,7 @@ interface WikiPageProps {
 
 interface PageResponse extends Page {
   entities?: { entity: Entity; relevance: number }[];
+  sources?: { source: Source }[];
 }
 
 export default async function WikiPage({ params }: WikiPageProps) {
@@ -37,14 +42,20 @@ export default async function WikiPage({ params }: WikiPageProps) {
 
   const page = response.data as PageResponse;
   const entities = page.entities?.map(e => e.entity) ?? [];
+  const sources = page.sources?.map(s => ({
+    url: s.source.url,
+    title: s.source.title ?? s.source.domain,
+    domain: s.source.domain,
+  })) ?? [];
 
   return (
     <MainLayout disableScroll={true}>
       <div className="flex flex-1 overflow-hidden h-full">
-        {/* Main content area - full width style like Vercel */}
+        {/* Main content area */}
         <div className="flex-1 overflow-y-auto min-w-0">
           <PageHeader
             title={page.title}
+            slug={page.slug}
             createdAt={page.createdAt}
             updatedAt={page.updatedAt}
             viewCount={page.viewCount}
@@ -52,17 +63,32 @@ export default async function WikiPage({ params }: WikiPageProps) {
             pageId={page.id}
           />
           
-          {/* Content - generous padding, no restrictive max-width */}
-          <div className="px-8 lg:px-12 py-10 lg:py-14">
+          {/* Content */}
+          <div className="px-8 lg:px-12 py-10 lg:py-14 space-y-8">
             <MarkdownContent content={page.content} />
+            
+            {sources.length > 0 && (
+              <SourcesPanel sources={sources} />
+            )}
           </div>
         </div>
 
-        {/* Right Sidebar for Entities */}
-        <aside className="hidden xl:block w-80 border-l border-border/50 overflow-y-auto bg-muted/5">
+        {/* Right Sidebar - TOC + Entities */}
+        <aside className="hidden xl:flex flex-col w-80 border-l border-border/50 bg-muted/5">
+          {/* Table of Contents */}
+          <div className="px-6">
+            <TableOfContents content={page.content} />
+          </div>
+          
+          <Separator className="mx-6 my-4" />
+          
+          {/* Entities */}
           <EntitySidebar entities={entities} />
         </aside>
       </div>
+      
+      {/* Mobile floating button for entities */}
+      <MobileEntitiesButton entities={entities} />
     </MainLayout>
   );
 }

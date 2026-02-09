@@ -4,11 +4,13 @@ import { useRef, useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, LayoutGrid, List } from "lucide-react";
 import { useGraph } from "@/hooks/useGraph";
 import { GraphView, type GraphViewRef } from "@/components/graph/GraphView";
 import { GraphControls } from "@/components/graph/GraphControls";
+import { PageListView } from "@/components/graph/PageListView";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { EntityType, GraphNode } from "@/types";
 
 const ALL_ENTITY_TYPES: EntityType[] = [
@@ -21,6 +23,8 @@ const ALL_ENTITY_TYPES: EntityType[] = [
   "OTHER",
 ];
 
+type ViewMode = "graph" | "list";
+
 function ExploreContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -31,6 +35,7 @@ function ExploreContent() {
 
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [filters, setFilters] = useState<EntityType[]>(ALL_ENTITY_TYPES);
+  const [viewMode, setViewMode] = useState<ViewMode>("graph");
 
   const { data, loading, error } = useGraph({
     pageId: pageId || undefined,
@@ -59,10 +64,10 @@ function ExploreContent() {
   }, []);
 
   useEffect(() => {
-    if (pageId && data && graphRef.current) {
+    if (pageId && data && graphRef.current && viewMode === "graph") {
       graphRef.current.centerOn(pageId);
     }
-  }, [pageId, data]);
+  }, [pageId, data, viewMode]);
 
   const handleNodeClick = useCallback(
     (node: GraphNode) => {
@@ -96,27 +101,51 @@ function ExploreContent() {
                 alt="PedIA"
                 width={28}
                 height={28}
-                className="opacity-90"
+                className="invert dark:invert-0"
               />
             </Link>
             <div className="h-6 w-px bg-border" />
             <h1 className="text-sm font-medium">
-              {pageId ? "Graph local" : "Explorateur de connaissances"}
+              {pageId ? "Graph local" : "Explorateur"}
             </h1>
           </div>
-          <nav className="flex items-center gap-2">
+          
+          <div className="flex items-center gap-3">
+            {/* View Toggle */}
+            <ToggleGroup 
+              type="single" 
+              value={viewMode} 
+              onValueChange={(v) => v && setViewMode(v as ViewMode)}
+              className="bg-muted/50 p-0.5 rounded-lg"
+            >
+              <ToggleGroupItem 
+                value="graph" 
+                aria-label="Vue graphe"
+                className="px-2.5 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+              >
+                <LayoutGrid className="size-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem 
+                value="list" 
+                aria-label="Vue liste"
+                className="px-2.5 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+              >
+                <List className="size-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+
             {pageId && (
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/explore">
-                  <ArrowLeft className="size-4" />
-                  Voir tout
+                  <ArrowLeft className="size-4 mr-1" />
+                  Tout
                 </Link>
               </Button>
             )}
             <Button variant="outline" size="sm" asChild>
               <Link href="/">Rechercher</Link>
             </Button>
-          </nav>
+          </div>
         </div>
       </header>
 
@@ -134,19 +163,26 @@ function ExploreContent() {
               </Button>
             </div>
           ) : data ? (
-            <GraphView
-              ref={graphRef}
-              data={data}
-              width={dimensions.width}
-              height={dimensions.height}
-              filters={filters}
-              highlightedId={pageId || undefined}
-              onNodeClick={handleNodeClick}
-            />
+            viewMode === "graph" ? (
+              <GraphView
+                ref={graphRef}
+                data={data}
+                width={dimensions.width}
+                height={dimensions.height}
+                filters={filters}
+                highlightedId={pageId || undefined}
+                onNodeClick={handleNodeClick}
+              />
+            ) : (
+              <PageListView 
+                data={data} 
+                highlightedId={pageId || undefined}
+              />
+            )
           ) : null}
         </div>
 
-        {!loading && !error && data && (
+        {!loading && !error && data && viewMode === "graph" && (
           <div className="absolute top-4 right-4">
             <GraphControls
               onZoomIn={handleZoomIn}
@@ -160,7 +196,7 @@ function ExploreContent() {
 
         {!loading && data && (
           <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-lg text-xs text-muted-foreground">
-            {data.nodes.length} nœuds · {data.links.length} liens
+            {data.nodes.filter(n => n.type === 'page').length} pages · {data.links.length} liens
           </div>
         )}
       </main>

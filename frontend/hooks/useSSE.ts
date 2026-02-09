@@ -5,7 +5,7 @@ import type { SSEEvent, GenerationStep } from "@/types";
 import { createSSEConnection, createMockSSE } from "@/lib/sse";
 import { api } from "@/lib/api";
 
-export type GenerationStatus = "idle" | "loading" | "complete" | "error";
+export type GenerationStatus = "idle" | "loading" | "complete" | "error" | "existing";
 
 export interface UseSSEState {
   status: GenerationStatus;
@@ -92,7 +92,7 @@ export function useSSE(): UseSSEReturn {
   }, []);
 
   const generate = useCallback(
-    (query: string) => {
+    async (query: string) => {
       if (closeRef.current) {
         closeRef.current();
       }
@@ -101,15 +101,48 @@ export function useSSE(): UseSSEReturn {
 
       if (USE_MOCK) {
         closeRef.current = createMockSSE(query, handleEvent);
-      } else {
-        const url = api.generate.url(query);
-        closeRef.current = createSSEConnection(url, handleEvent, (error) => {
+        return;
+      }
+
+      // First, check if page exists via a fetch request
+      try {
+        const checkUrl = api.generate.url(query);
+        const response = await fetch(checkUrl, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+        });
+        
+        const contentType = response.headers.get('content-type') || '';
+        
+        // If response is JSON, it means the page exists
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          
+          if (data.type === 'existing' && data.page) {
+            setState((prev) => ({
+              ...prev,
+              status: "existing",
+              page: data.page,
+            }));
+            return;
+          }
+        }
+        
+        // Otherwise, open SSE connection for generation
+        // We need to make a new request since the first one already consumed the response
+        closeRef.current = createSSEConnection(checkUrl, handleEvent, (error) => {
           setState((prev) => ({
             ...prev,
             status: "error",
             error: error.message,
           }));
         });
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          status: "error",
+          error: error instanceof Error ? error.message : "Une erreur est survenue",
+        }));
       }
     },
     [handleEvent],
