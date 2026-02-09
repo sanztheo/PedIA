@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +28,13 @@ export function Header() {
           <SheetContent side="left" className="w-72 p-0">
             <SheetHeader className="border-b border-border px-4 py-3">
               <SheetTitle className="flex items-center gap-2">
-                <Sparkles className="size-5 text-primary" />
+                <Image 
+                  src="/logo/logo_no_bg.svg" 
+                  alt="PedIA" 
+                  width={28} 
+                  height={28}
+                  className="invert dark:invert-0"
+                />
                 PedIA
               </SheetTitle>
             </SheetHeader>
@@ -42,7 +49,13 @@ export function Header() {
           href="/"
           className="flex items-center gap-2 text-xl font-bold hover:opacity-80 transition-opacity"
         >
-          <Sparkles className="size-5 text-primary" />
+          <Image 
+            src="/logo/logo_no_bg.svg" 
+            alt="PedIA" 
+            width={32} 
+            height={32}
+            className="invert dark:invert-0"
+          />
           <span>PedIA</span>
         </Link>
 

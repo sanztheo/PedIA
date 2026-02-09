@@ -94,10 +94,19 @@ export interface Entity {
   description: string | null;
 }
 
+export interface Source {
+  url: string;
+  title: string | null;
+  domain: string;
+}
+
 export interface PageWithEntities extends Page {
   entities: {
     entity: Entity;
     relevance: number;
+  }[];
+  sources?: {
+    source: Source;
   }[];
 }
 

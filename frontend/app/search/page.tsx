@@ -33,10 +33,12 @@ function SearchContent() {
   }, [query, status, generate]);
 
   useEffect(() => {
-    if (status === "complete" && page) {
+    // Redirect for both complete (new generation) and existing pages
+    if ((status === "complete" || status === "existing") && page) {
+      const delay = status === "existing" ? 0 : 2500; // Immediate for existing, delay for new
       const timer = setTimeout(() => {
         router.push(`/wiki/${page.slug}`);
-      }, 2500); // Time to see the success animation
+      }, delay);
       return () => clearTimeout(timer);
     }
   }, [status, page, router]);

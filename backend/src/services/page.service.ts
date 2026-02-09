@@ -75,6 +75,17 @@ export const PageService = {
             relevance: "desc",
           },
         },
+        sources: {
+          include: {
+            source: {
+              select: {
+                url: true,
+                title: true,
+                domain: true,
+              },
+            },
+          },
+        },
       },
     });
   },

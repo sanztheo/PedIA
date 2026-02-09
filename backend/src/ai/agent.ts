@@ -19,6 +19,12 @@ export interface GenerationContext {
   maxTokens?: number;
 }
 
+export interface SourceInfo {
+  url: string;
+  title: string;
+  domain: string;
+}
+
 export interface GenerationResult {
   stream: AsyncIterable<string>;
   getContent: () => Promise<string>;
@@ -113,7 +119,7 @@ function validateContext(ctx: GenerationContext): void {
 export async function generatePage(
   ctx: GenerationContext,
   emitter: SSEEmitter,
-): Promise<{ content: string; entities: ExtractedEntity[] }> {
+): Promise<{ content: string; entities: ExtractedEntity[]; sources: SourceInfo[] }> {
   // Validate input before any expensive operations
   validateContext(ctx);
 
@@ -178,7 +184,14 @@ export async function generatePage(
 
   await emitter.stepComplete("extract");
 
-  return { content: fullContent, entities };
+  // Extract source info from search results
+  const sourceInfos: SourceInfo[] = searchResults.results.map((r) => ({
+    url: r.url,
+    title: r.title,
+    domain: new URL(r.url).hostname.replace('www.', ''),
+  }));
+
+  return { content: fullContent, entities, sources: sourceInfos };
 }
 
 export async function extractEntitiesWithAI(
