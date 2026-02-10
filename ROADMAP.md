@@ -150,10 +150,10 @@
 
 ### Versioning
 
-- [ ] **UI historique** : Liste des versions (schéma `PageVersion` existe)
-- [ ] **Diff view** : Comparaison avant/après
-- [ ] **Rollback** : Revenir à une version antérieure
-- [ ] **Changelog auto** : Résumé des modifications
+- [x] **UI historique** : Liste des versions (schéma `PageVersion` existe)
+- [x] **Diff view** : Comparaison avant/après
+- [x] **Rollback** : Revenir à une version antérieure
+- [x] **Changelog auto** : Résumé des modifications
 
 ### Éditeur (optionnel)
 

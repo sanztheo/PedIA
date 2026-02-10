@@ -78,12 +78,6 @@ export function PageListView({ data, highlightedId }: PageListViewProps) {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground ml-4">
-                    {page.metadata?.viewCount !== undefined && (
-                      <span className="flex items-center gap-1 text-xs">
-                        <Eye className="size-3" />
-                        {page.metadata.viewCount}
-                      </span>
-                    )}
                     <ChevronRight className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </Link>

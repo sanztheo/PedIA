@@ -1,5 +1,6 @@
 import type {
   Page,
+  PageVersion,
   GraphData,
   SearchResult,
   APIResponse,
@@ -45,6 +46,20 @@ export const api = {
     search: (query: string) =>
       fetchAPI<{ results: SearchResult[]; total: number }>(
         `/api/search?q=${encodeURIComponent(query)}`,
+      ),
+  },
+
+  versions: {
+    list: (pageId: string) =>
+      fetchAPI<PageVersion[]>(`/api/pages/${pageId}/versions`),
+
+    get: (pageId: string, version: number) =>
+      fetchAPI<PageVersion>(`/api/pages/${pageId}/versions/${version}`),
+
+    rollback: (pageId: string, version: number) =>
+      fetchAPI<{ page: Page; newVersion: PageVersion }>(
+        `/api/pages/${pageId}/versions/${version}/rollback`,
+        { method: "POST" },
       ),
   },
 

@@ -37,6 +37,7 @@ const initialState: UseSSEState = {
 export function useSSE(): UseSSEReturn {
   const [state, setState] = useState<UseSSEState>(initialState);
   const closeRef = useRef<(() => void) | null>(null);
+  const isGeneratingRef = useRef(false);
 
   const handleEvent = useCallback((event: SSEEvent) => {
     switch (event.type) {
@@ -93,6 +94,11 @@ export function useSSE(): UseSSEReturn {
 
   const generate = useCallback(
     async (query: string) => {
+      if (isGeneratingRef.current) {
+        return;
+      }
+      isGeneratingRef.current = true;
+
       if (closeRef.current) {
         closeRef.current();
       }
@@ -104,46 +110,25 @@ export function useSSE(): UseSSEReturn {
         return;
       }
 
-      // First, check if page exists via a fetch request
-      try {
-        const checkUrl = api.generate.url(query);
-        const response = await fetch(checkUrl, {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' },
-        });
-        
-        const contentType = response.headers.get('content-type') || '';
-        
-        // If response is JSON, it means the page exists
-        if (contentType.includes('application/json')) {
-          const data = await response.json();
-          
-          if (data.type === 'existing' && data.page) {
-            setState((prev) => ({
-              ...prev,
-              status: "existing",
-              page: data.page,
-            }));
-            return;
+      const url = api.generate.url(query);
+      
+      closeRef.current = createSSEConnection(
+        url,
+        (event) => {
+          handleEvent(event);
+          if (event.type === "complete" || event.type === "error") {
+            isGeneratingRef.current = false;
           }
-        }
-        
-        // Otherwise, open SSE connection for generation
-        // We need to make a new request since the first one already consumed the response
-        closeRef.current = createSSEConnection(checkUrl, handleEvent, (error) => {
+        },
+        (error) => {
           setState((prev) => ({
             ...prev,
             status: "error",
             error: error.message,
           }));
-        });
-      } catch (error) {
-        setState((prev) => ({
-          ...prev,
-          status: "error",
-          error: error instanceof Error ? error.message : "Une erreur est survenue",
-        }));
-      }
+          isGeneratingRef.current = false;
+        }
+      );
     },
     [handleEvent],
   );
@@ -153,6 +138,7 @@ export function useSSE(): UseSSEReturn {
       closeRef.current();
       closeRef.current = null;
     }
+    isGeneratingRef.current = false;
     setState(initialState);
   }, []);
 

@@ -82,8 +82,28 @@ export interface Page {
   summary: string | null;
   status: PageStatus;
   viewCount: number;
+  biasScore?: number;
+  biasAnalysis?: {
+    score: number;
+    biasTypes: string[];
+    loadedWords: string[];
+    problematicSentences: string[];
+    justification: string;
+    recommendation: 'OK' | 'REVIEW' | 'FLAG';
+    analysisMethod: 'llm' | 'fallback';
+  };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PageVersion {
+  id: string;
+  pageId: string;
+  content: string;
+  summary: string | null;
+  version: number;
+  changeLog: string | null;
+  createdAt: string;
 }
 
 export interface Entity {

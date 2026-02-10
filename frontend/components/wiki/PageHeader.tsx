@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Network, Eye, Clock, CalendarDays, Sparkles } from 'lucide-react';
+import { Network, Eye, Clock, CalendarDays, Sparkles, History } from 'lucide-react';
 import { PageStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -62,7 +62,7 @@ export function PageHeader({
   return (
     <header className="relative border-b border-border/50">
       {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-muted/20 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-b from-muted/20 to-transparent pointer-events-none" />
       
       <div className="relative px-8 lg:px-12 py-10 lg:py-14">
         {/* Breadcrumb */}
@@ -101,6 +101,17 @@ export function PageHeader({
                   <Link href={`/explore?page=${pageId}`}>
                     <Network className="size-4" />
                     <span className="hidden sm:inline">Graphe</span>
+                  </Link>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-muted-foreground hover:text-foreground gap-2"
+                  asChild
+                >
+                  <Link href={`/wiki/${slug}/history`}>
+                    <History className="size-4" />
+                    <span className="hidden sm:inline">Historique</span>
                   </Link>
                 </Button>
                 <PageActionsMenu title={title} slug={slug} pageId={pageId} />

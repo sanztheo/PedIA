@@ -7,6 +7,7 @@ import generate from "./routes/generate";
 import graph from "./routes/graph";
 import search from "./routes/search";
 import reports from "./routes/reports";
+import versions from "./routes/versions";
 import admin, { bullBoardApp, adminAuth } from "./routes/admin";
 
 const app = new Hono();
@@ -28,6 +29,7 @@ app.get("/health", (c) =>
 
 // Routes
 app.route("/api/pages", pages);
+app.route("/api/pages", versions);
 app.route("/api/generate", generate);
 app.route("/api/graph", graph);
 app.route("/api/search", search);

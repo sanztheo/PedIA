@@ -3,6 +3,8 @@ import { streamSSE } from "hono/streaming";
 import { generatePage, type SSEEmitter } from "../ai/agent";
 import prisma from "../lib/prisma";
 import { setCache, invalidateGraphCache } from "../lib/redis";
+import { analyzeBias } from "../lib/bias-detector";
+import { VersionService } from "../services/version.service";
 import type { SSEEventType } from "../types";
 
 const app = new Hono();
@@ -96,6 +98,18 @@ app.get("/", async (c) => {
         emitter,
       );
 
+      // Analyze content for bias (runs in parallel with save)
+      await emitter.stepStart("analyze_bias", "Analyse de neutralité...");
+      let biasResult;
+      try {
+        biasResult = await analyzeBias(content);
+        await emitter.stepComplete("analyze_bias");
+      } catch (error) {
+        console.error("Bias analysis failed:", error);
+        biasResult = { score: 0, biasTypes: [], loadedWords: [], problematicSentences: [], justification: "", recommendation: "OK" as const, analysisMethod: "fallback" as const };
+        await emitter.stepComplete("analyze_bias");
+      }
+
       await emitter.stepStart("save", "Sauvegarde...");
 
       const title = titleFromQuery(query);
@@ -110,11 +124,15 @@ app.get("/", async (c) => {
             title,
             content,
             status: "PUBLISHED",
+            biasScore: biasResult.score,
+            biasAnalysis: biasResult as object,
           },
           update: {
             content,
             status: "PUBLISHED",
             updatedAt: new Date(),
+            biasScore: biasResult.score,
+            biasAnalysis: biasResult as object,
           },
         });
 
@@ -187,6 +205,10 @@ app.get("/", async (c) => {
         console.error("Failed to cache page:", err);
       });
       invalidateGraphCache().catch(() => {});
+
+      VersionService.createVersion(page.id, content, "Version initiale").catch((err) => {
+        console.error("Failed to create initial version:", err);
+      });
 
       await emitter.stepComplete("save");
 

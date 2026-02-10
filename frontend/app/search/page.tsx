@@ -115,7 +115,7 @@ function SearchContent() {
 function Header() {
   return (
     <header className="border-b border-border">
-      <div className="max-w-screen-lg mx-auto px-6 h-14 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
         <Link href="/" className="hover:opacity-70 transition-opacity">
           <Image
             src="/logo/logo_no_bg.svg"

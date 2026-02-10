@@ -61,6 +61,7 @@ export default async function WikiPage({ params }: WikiPageProps) {
             viewCount={page.viewCount}
             status={page.status}
             pageId={page.id}
+            confidenceScore={page.biasScore !== undefined ? (100 - page.biasScore) / 100 : undefined}
           />
           
           {/* Content */}
