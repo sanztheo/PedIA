@@ -110,8 +110,44 @@ export function useSSE(): UseSSEReturn {
         return;
       }
 
+      // Create a controller for the pre-check fetch
+      const controller = new AbortController();
+      closeRef.current = () => controller.abort();
+
       const url = api.generate.url(query);
-      
+
+      // Pre-check if page exists to handle JSON response
+      try {
+        const response = await fetch(url, { 
+          cache: "no-store",
+          signal: controller.signal 
+        });
+        const contentType = response.headers.get('content-type');
+        
+        // If it's JSON, it means the page already exists
+        if (contentType?.includes('application/json')) {
+          const data = await response.json();
+          if (data.type === 'existing' && data.page) {
+            setState({
+              ...initialState,
+              status: "existing",
+              page: data.page,
+            });
+            isGeneratingRef.current = false;
+            return;
+          }
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+        console.error("Pre-check failed, proceeding with SSE:", error);
+      }
+
+      // If we're here, we need to start SSE
+      // Only start if not aborted
+      if (controller.signal.aborted) return;
+
       closeRef.current = createSSEConnection(
         url,
         (event) => {

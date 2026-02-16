@@ -17,36 +17,52 @@ Nouvelle version:
 
 export const VersionService = {
   async createVersion(pageId: string, content: string, changeLog?: string): Promise<PageVersion | null> {
-    const lastVersion = await prisma.pageVersion.findFirst({
-      where: { pageId },
-      orderBy: { version: "desc" },
-      select: { version: true, content: true },
-    });
-
-    if (lastVersion && lastVersion.content === content) {
-      return null;
-    }
-
-    const newVersionNumber = (lastVersion?.version ?? 0) + 1;
-
-    let finalChangeLog = changeLog;
-    if (!finalChangeLog && lastVersion) {
-      finalChangeLog = await this.generateChangelog(lastVersion.content, content);
-    }
-
+    // Use transaction to ensure atomicity and prevent race conditions
     try {
-      return await prisma.pageVersion.create({
-        data: {
-          pageId,
-          content,
-          version: newVersionNumber,
-          changeLog: finalChangeLog || "Version initiale",
-        },
+      return await prisma.$transaction(async (tx) => {
+        // Re-check latest version INSIDE transaction for consistency
+        const lastVersion = await tx.pageVersion.findFirst({
+          where: { pageId },
+          orderBy: { version: "desc" },
+          select: { version: true, content: true },
+        });
+
+        // Skip if content is identical (deduplication)
+        if (lastVersion && lastVersion.content === content) {
+          console.log(`[VERSION] Skipping duplicate content for pageId=${pageId}`);
+          return null;
+        }
+
+        const newVersionNumber = (lastVersion?.version ?? 0) + 1;
+
+        let finalChangeLog = changeLog;
+        if (!finalChangeLog && lastVersion) {
+          finalChangeLog = await this.generateChangelog(lastVersion.content, content);
+        }
+
+        // Create version with unique constraint protection
+        return await tx.pageVersion.create({
+          data: {
+            pageId,
+            content,
+            version: newVersionNumber,
+            changeLog: finalChangeLog || "Version initiale",
+          },
+        });
+      }, {
+        isolationLevel: 'Serializable', // Strongest isolation to prevent race conditions
+        maxWait: 5000,
+        timeout: 10000,
       });
     } catch (error) {
+      // Handle unique constraint violation (duplicate version number)
       if ((error as { code?: string }).code === 'P2002') {
+        console.warn(`[VERSION] Duplicate version prevented for pageId=${pageId} (race condition detected)`);
         return null;
       }
+      
+      // Log and rethrow other errors
+      console.error('[VERSION] Failed to create version:', error);
       throw error;
     }
   },

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Network, Eye, Clock, CalendarDays, Sparkles, History } from 'lucide-react';
+import { Network, Eye, Clock, CalendarDays, Sparkles, History, Loader2 } from 'lucide-react';
 import { PageStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,8 @@ interface PageHeaderProps {
   status: PageStatus;
   pageId?: string;
   confidenceScore?: number;
+  onEdit?: () => void;
+  isEditing?: boolean;
 }
 
 const statusConfig: Record<PageStatus, { label: string; className: string; dot: string }> = {
@@ -54,6 +56,8 @@ export function PageHeader({
   status,
   pageId,
   confidenceScore,
+  onEdit,
+  isEditing,
 }: PageHeaderProps) {
   const statusInfo = statusConfig[status];
   const createdDate = new Date(createdAt);
@@ -92,6 +96,24 @@ export function PageHeader({
           <div className="flex items-center gap-1">
             {pageId && (
               <>
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onEdit}
+                    disabled={isEditing}
+                    className="text-muted-foreground hover:text-foreground gap-2"
+                  >
+                    {isEditing ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-4" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {isEditing ? 'Amélioration...' : 'Améliorer avec l\'IA'}
+                    </span>
+                  </Button>
+                )}
                 <Button 
                   variant="ghost" 
                   size="sm" 

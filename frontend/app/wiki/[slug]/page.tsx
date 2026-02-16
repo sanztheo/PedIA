@@ -1,12 +1,7 @@
 import { api } from '@/lib/api';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { PageHeader } from '@/components/wiki/PageHeader';
-import { MarkdownContent } from '@/components/wiki/MarkdownContent';
-import { EntitySidebar } from '@/components/wiki/EntitySidebar';
-import { SourcesPanel } from '@/components/wiki/SourcesPanel';
-import { TableOfContents } from '@/components/wiki/TableOfContents';
+import { WikiView } from '@/components/wiki/WikiView';
 import { MobileEntitiesButton } from '@/components/wiki/MobileEntitiesButton';
-import { Separator } from '@/components/ui/separator';
 import type { Page, Entity, Source } from '@/types';
 
 interface WikiPageProps {
@@ -46,49 +41,16 @@ export default async function WikiPage({ params }: WikiPageProps) {
     url: s.source.url,
     title: s.source.title ?? s.source.domain,
     domain: s.source.domain,
+    reliability: s.source.reliability,
   })) ?? [];
 
   return (
     <MainLayout disableScroll={true}>
-      <div className="flex flex-1 overflow-hidden h-full">
-        {/* Main content area */}
-        <div className="flex-1 overflow-y-auto min-w-0">
-          <PageHeader
-            title={page.title}
-            slug={page.slug}
-            createdAt={page.createdAt}
-            updatedAt={page.updatedAt}
-            viewCount={page.viewCount}
-            status={page.status}
-            pageId={page.id}
-            confidenceScore={page.biasScore !== undefined ? (100 - page.biasScore) / 100 : undefined}
-          />
-          
-          {/* Content */}
-          <div className="px-8 lg:px-12 py-10 lg:py-14 space-y-8">
-            <MarkdownContent content={page.content} />
-            
-            {sources.length > 0 && (
-              <SourcesPanel sources={sources} />
-            )}
-          </div>
-        </div>
-
-        {/* Right Sidebar - TOC + Entities */}
-        <aside className="hidden xl:flex flex-col w-80 border-l border-border/50 bg-muted/5">
-          {/* Table of Contents */}
-          <div className="px-6">
-            <TableOfContents content={page.content} />
-          </div>
-          
-          <Separator className="mx-6 my-4" />
-          
-          {/* Entities */}
-          <EntitySidebar entities={entities} />
-        </aside>
-      </div>
-      
-      {/* Mobile floating button for entities */}
+      <WikiView 
+        page={page} 
+        entities={entities} 
+        sources={sources} 
+      />
       <MobileEntitiesButton entities={entities} />
     </MainLayout>
   );

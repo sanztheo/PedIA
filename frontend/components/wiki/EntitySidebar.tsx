@@ -73,10 +73,11 @@ export function EntitySidebar({ entities }: EntitySidebarProps) {
         {entities.map((entity) => {
           const config = entityTypeConfig[entity.type];
           const Icon = config.icon;
+
           return (
             <Link
               key={entity.id}
-              href={`/wiki/${entity.normalizedName}`}
+              href={`/search?q=${encodeURIComponent(entity.name)}`}
               className={cn(
                 "group block p-3 rounded-lg border border-border",
                 "hover:border-primary/50 hover:bg-accent/50",
@@ -86,7 +87,7 @@ export function EntitySidebar({ entities }: EntitySidebarProps) {
               <div className="flex items-start gap-3">
                 <span
                   className={cn(
-                    'flex items-center justify-center size-8 rounded-lg',
+                    'flex items-center justify-center size-8 rounded-lg shrink-0',
                     config.color
                   )}
                 >

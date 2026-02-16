@@ -79,7 +79,7 @@ export default function HistoryPage({ params }: HistoryPageProps) {
           <Button variant="ghost" size="sm" asChild>
             <Link href={`/wiki/${slug}`}>
               <ArrowLeft className="size-4 mr-2" />
-              Retour à l'article
+              Retour à l&apos;article
             </Link>
           </Button>
         </div>

@@ -1,9 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { Eye, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { GraphData, GraphNode } from '@/types';
 

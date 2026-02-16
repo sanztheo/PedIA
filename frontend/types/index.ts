@@ -5,7 +5,9 @@ export type SSEEventType =
   | "content_chunk"
   | "entity_found"
   | "complete"
-  | "error";
+  | "error"
+  | "section_editing"
+  | "edit_complete";
 
 export type GenerationStep =
   | "search"
@@ -74,6 +76,17 @@ export interface ErrorEvent extends SSEEvent {
   message: string;
 }
 
+export interface SectionEditingEvent extends SSEEvent {
+  type: "section_editing";
+  sectionId: string;
+}
+
+export interface EditCompleteEvent extends SSEEvent {
+  type: "edit_complete";
+  sectionId: string;
+  content: string;
+}
+
 export interface Page {
   id: string;
   slug: string;
@@ -112,12 +125,14 @@ export interface Entity {
   normalizedName: string;
   type: EntityType;
   description: string | null;
+  slug?: string | null;
 }
 
 export interface Source {
   url: string;
   title: string | null;
   domain: string;
+  reliability?: number;
 }
 
 export interface PageWithEntities extends Page {

@@ -5,6 +5,7 @@ import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { HonoAdapter } from "@bull-board/hono";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { extractQueue, linkQueue, enrichQueue } from "../queue/queues";
+import adminVersions from "./admin-versions";
 
 // Basic Auth middleware
 const adminSecret = process.env.ADMIN_SECRET || "admin";
@@ -56,6 +57,9 @@ admin.get("/status", auth, async (c) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Mount version admin routes
+admin.route("/", adminVersions);
 
 export default admin;
 export { auth as adminAuth };

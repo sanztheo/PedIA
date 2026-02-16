@@ -1,22 +1,41 @@
 'use client';
 
-import { ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronUp, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-
-interface Source {
-  url: string;
-  title: string;
-  domain: string;
-}
+import type { Source } from '@/types';
 
 interface SourcesPanelProps {
   sources: Source[];
 }
 
+function AuthorityBadge({ reliability }: { reliability?: number }) {
+  if (reliability === undefined) return null;
+
+  if (reliability >= 0.85) {
+    return (
+      <span title={`Autorité : ${Math.round(reliability * 100)}%`} className="shrink-0">
+        <ShieldCheck className="size-3.5 text-green-500" />
+      </span>
+    );
+  }
+  if (reliability >= 0.60) {
+    return (
+      <span title={`Autorité : ${Math.round(reliability * 100)}%`} className="shrink-0">
+        <Shield className="size-3.5 text-yellow-500" />
+      </span>
+    );
+  }
+  return (
+    <span title={`Autorité : ${Math.round(reliability * 100)}%`} className="shrink-0">
+      <ShieldAlert className="size-3.5 text-red-400" />
+    </span>
+  );
+}
+
 export function SourcesPanel({ sources }: SourcesPanelProps) {
   const [expanded, setExpanded] = useState(false);
-  
+
   if (sources.length === 0) {
     return null;
   }
@@ -55,6 +74,7 @@ export function SourcesPanel({ sources }: SourcesPanelProps) {
                   {source.domain}
                 </p>
               </div>
+              <AuthorityBadge reliability={source.reliability} />
             </a>
           </li>
         ))}

@@ -202,7 +202,7 @@ function findLoadedWords(text: string): { words: string[]; score: number } {
 }
 
 function analyzeBiasFallback(content: string): BiasAnalysisResult {
-  const { words: loadedWords, score: loadedScore } = findLoadedWords(content);
+  const { words: loadedWords } = findLoadedWords(content);
   const superlatives = findMatches(content, SUPERLATIVES);
   const generalizations = findMatches(content, GENERALIZATIONS);
 

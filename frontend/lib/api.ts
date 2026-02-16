@@ -41,7 +41,8 @@ export const api = {
         `/api/pages?page=${params?.page || 1}&limit=${params?.limit || 20}`,
       ),
 
-    get: (slug: string) => fetchAPI<Page>(`/api/pages/${slug}?entities=true`),
+    get: (slug: string) =>
+      fetchAPI<Page>(`/api/pages/${slug}?entities=true`, { cache: "no-store" }),
 
     search: (query: string) =>
       fetchAPI<{ results: SearchResult[]; total: number }>(
@@ -51,10 +52,10 @@ export const api = {
 
   versions: {
     list: (pageId: string) =>
-      fetchAPI<PageVersion[]>(`/api/pages/${pageId}/versions`),
+      fetchAPI<PageVersion[]>(`/api/pages/${pageId}/versions`, { cache: "no-store" }),
 
     get: (pageId: string, version: number) =>
-      fetchAPI<PageVersion>(`/api/pages/${pageId}/versions/${version}`),
+      fetchAPI<PageVersion>(`/api/pages/${pageId}/versions/${version}`, { cache: "no-store" }),
 
     rollback: (pageId: string, version: number) =>
       fetchAPI<{ page: Page; newVersion: PageVersion }>(
