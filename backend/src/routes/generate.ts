@@ -3,7 +3,11 @@ import { streamSSE } from "hono/streaming";
 import { generatePage, type SSEEmitter } from "../ai/agent";
 import prisma from "../lib/prisma";
 import { setCache, invalidateGraphCache } from "../lib/redis";
+import { analyzeBias } from "../lib/bias-detector";
+import { computeDomainAuthority } from "../lib/domain-authority";
+import { VersionService } from "../services/version.service";
 import type { SSEEventType } from "../types";
+import { addExtractJob, addEmbedJob } from "../queue";
 
 const app = new Hono();
 
@@ -96,6 +100,18 @@ app.get("/", async (c) => {
         emitter,
       );
 
+      // Analyze content for bias (runs in parallel with save)
+      await emitter.stepStart("analyze_bias", "Analyse de neutralité...");
+      let biasResult;
+      try {
+        biasResult = await analyzeBias(content);
+        await emitter.stepComplete("analyze_bias");
+      } catch (error) {
+        console.error("Bias analysis failed:", error);
+        biasResult = { score: 0, biasTypes: [], loadedWords: [], problematicSentences: [], justification: "", recommendation: "OK" as const, analysisMethod: "fallback" as const };
+        await emitter.stepComplete("analyze_bias");
+      }
+
       await emitter.stepStart("save", "Sauvegarde...");
 
       const title = titleFromQuery(query);
@@ -110,11 +126,15 @@ app.get("/", async (c) => {
             title,
             content,
             status: "PUBLISHED",
+            biasScore: biasResult.score,
+            biasAnalysis: biasResult as object,
           },
           update: {
             content,
             status: "PUBLISHED",
             updatedAt: new Date(),
+            biasScore: biasResult.score,
+            biasAnalysis: biasResult as object,
           },
         });
 
@@ -152,15 +172,18 @@ app.get("/", async (c) => {
 
         // Save sources
         for (const source of sources) {
+          const reliability = computeDomainAuthority(source.url);
           const dbSource = await tx.source.upsert({
             where: { url: source.url },
             create: {
               url: source.url,
               title: source.title,
               domain: source.domain,
+              reliability,
             },
             update: {
               title: source.title,
+              reliability,
             },
           });
 
@@ -182,11 +205,29 @@ app.get("/", async (c) => {
         return savedPage;
       }, { timeout: 40000 });
 
+      // Create or update version (async, after transaction to avoid blocking)
+      VersionService.createVersion(
+        page.id,
+        content,
+        "Génération automatique"
+      ).catch((err) => {
+        console.error('[GENERATE] Failed to create version:', err);
+      });
+
       // Cache outside transaction (non-critical, fire and forget)
       setCache(`page:${slug}`, page, 3600).catch((err) => {
         console.error("Failed to cache page:", err);
       });
       invalidateGraphCache().catch(() => {});
+
+      // Queue async jobs for entity extraction and embedding
+      addExtractJob({ pageId: page.id, content }).catch((err) => {
+        console.error("Failed to queue extract job:", err);
+      });
+
+      addEmbedJob({ pageId: page.id, content }).catch((err) => {
+        console.error("Failed to queue embed job:", err);
+      });
 
       await emitter.stepComplete("save");
 

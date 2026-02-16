@@ -27,14 +27,27 @@ export interface ListPagesOptions {
 
 export const PageService = {
   async create(input: CreatePageInput): Promise<Page> {
-    const page = await prisma.page.create({
-      data: {
-        slug: input.slug,
-        title: input.title,
-        content: input.content,
-        summary: input.summary,
-        status: input.status ?? "DRAFT",
-      },
+    const page = await prisma.$transaction(async (tx) => {
+      const newPage = await tx.page.create({
+        data: {
+          slug: input.slug,
+          title: input.title,
+          content: input.content,
+          summary: input.summary,
+          status: input.status ?? "DRAFT",
+        },
+      });
+
+      await tx.pageVersion.create({
+        data: {
+          pageId: newPage.id,
+          content: input.content,
+          version: 1,
+          changeLog: "Version initiale",
+        },
+      });
+
+      return newPage;
     });
 
     await setCache(`page:${page.slug}`, page, PAGE_CACHE_TTL);
@@ -82,6 +95,7 @@ export const PageService = {
                 url: true,
                 title: true,
                 domain: true,
+                reliability: true,
               },
             },
           },

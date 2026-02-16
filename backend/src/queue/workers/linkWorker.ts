@@ -14,6 +14,17 @@ async function processLinkJob(job: Job<LinkJobData>) {
 
   await job.updateProgress(10);
 
+  // Verify page still exists before processing
+  const page = await prisma.page.findUnique({
+    where: { id: pageId },
+    select: { id: true },
+  });
+
+  if (!page) {
+    console.warn(`[LinkWorker] Page ${pageId} not found, skipping job`);
+    return { pageId, linked: 0, relations: 0, enrichQueued: 0 };
+  }
+
   const upsertedEntities = await Promise.all(
     entities.map((entity) =>
       prisma.entity.upsert({

@@ -117,6 +117,32 @@ async function processEnrichJob(job: Job<EnrichJobData>) {
         }),
       );
 
+      // Create initial version if it doesn't exist
+      const lastVersion = await tx.pageVersion.findFirst({
+        where: { pageId: savedPage.id },
+        orderBy: { version: "desc" },
+      });
+
+      if (!lastVersion) {
+        await tx.pageVersion.create({
+          data: {
+            pageId: savedPage.id,
+            content,
+            version: 1,
+            changeLog: "Génération automatique (Enrichissement)",
+          },
+        });
+      } else if (lastVersion.content !== content) {
+        await tx.pageVersion.create({
+          data: {
+            pageId: savedPage.id,
+            content,
+            version: lastVersion.version + 1,
+            changeLog: "Mise à jour automatique (Enrichissement)",
+          },
+        });
+      }
+
       return savedPage;
     },
     { timeout: 15000 },

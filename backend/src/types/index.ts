@@ -15,7 +15,9 @@ export type SSEEventType =
   | "content_chunk"
   | "entity_found"
   | "complete"
-  | "error";
+  | "error"
+  | "section_editing"
+  | "edit_complete";
 
 export type GenerationStep =
   | "search"

@@ -207,3 +207,16 @@
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+
+/* Section editing highlight */
+@keyframes section-editing-pulse {
+  0%, 100% { background-color: color-mix(in oklch, var(--primary) 4%, transparent); }
+  50% { background-color: color-mix(in oklch, var(--primary) 9%, transparent); }
+}
+
+.section-editing {
+  border-left: 2px solid color-mix(in oklch, var(--primary) 50%, transparent);
+  padding-left: 1rem;
+  margin-left: -1.125rem;
+  animation: section-editing-pulse 2s ease-in-out infinite;
+}

@@ -92,7 +92,7 @@ function ExploreContent() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <header className="flex-shrink-0 border-b border-border">
+      <header className="shrink-0 border-b border-border">
         <div className="h-14 px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="hover:opacity-70 transition-opacity">

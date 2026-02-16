@@ -76,7 +76,7 @@ export function createSSEConnection(
   });
 
   // Handle connection errors (network issues, server unavailable, etc.)
-  eventSource.onerror = (event) => {
+  eventSource.onerror = () => {
     // Only trigger error callback if connection is truly failed
     // EventSource.CLOSED = 2, EventSource.CONNECTING = 0
     if (eventSource.readyState === EventSource.CLOSED) {

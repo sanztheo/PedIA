@@ -27,19 +27,30 @@ function SearchContent() {
   } = useSSE();
 
   useEffect(() => {
-    if (query && status === "idle") {
+    if (query) {
       generate(query);
     }
-  }, [query, status, generate]);
+    
+    return () => {
+      reset();
+    };
+    // We intentionally only run this effect when the query changes to avoid infinite loops
+    // with status updates or generate reference changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   useEffect(() => {
-    // Redirect for both complete (new generation) and existing pages
-    if ((status === "complete" || status === "existing") && page) {
-      const delay = status === "existing" ? 0 : 2500; // Immediate for existing, delay for new
+    // Only redirect when we have a confirmed complete or existing page
+    if (status === "complete" && page?.slug) {
       const timer = setTimeout(() => {
         router.push(`/wiki/${page.slug}`);
-      }, delay);
+      }, 2500);
       return () => clearTimeout(timer);
+    }
+    
+    // For existing pages, redirect immediately
+    if (status === "existing" && page?.slug) {
+      router.push(`/wiki/${page.slug}`);
     }
   }, [status, page, router]);
 
@@ -115,7 +126,7 @@ function SearchContent() {
 function Header() {
   return (
     <header className="border-b border-border">
-      <div className="max-w-screen-lg mx-auto px-6 h-14 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
         <Link href="/" className="hover:opacity-70 transition-opacity">
           <Image
             src="/logo/logo_no_bg.svg"

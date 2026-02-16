@@ -70,6 +70,23 @@ export const queueEvents = {
   embed: connectionOpts ? new QueueEvents("embed", connectionOpts) : null,
 };
 
+// Prevent unhandled Redis connection errors from crashing the server
+const handleError = (name: string) => (err: Error) => {
+  console.warn(`[Queue] ${name} connection error: ${err.message}`);
+};
+
+extractQueue?.on("error", handleError("extractQueue"));
+linkQueue?.on("error", handleError("linkQueue"));
+enrichQueue?.on("error", handleError("enrichQueue"));
+verifyQueue?.on("error", handleError("verifyQueue"));
+embedQueue?.on("error", handleError("embedQueue"));
+flowProducer?.on("error", handleError("flowProducer"));
+queueEvents.extract?.on("error", handleError("queueEvents.extract"));
+queueEvents.link?.on("error", handleError("queueEvents.link"));
+queueEvents.enrich?.on("error", handleError("queueEvents.enrich"));
+queueEvents.verify?.on("error", handleError("queueEvents.verify"));
+queueEvents.embed?.on("error", handleError("queueEvents.embed"));
+
 export function getRedisUrl() {
   return REDIS_URL;
 }

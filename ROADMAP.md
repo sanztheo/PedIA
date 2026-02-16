@@ -8,7 +8,7 @@
 | Phase 2 - Search & Graph       | ✅ **Complète**  | Recherche sémantique, graph avancé                   |
 | Phase 3 - Auto-Evolution       | ✅ **Complète**  | Queue workers, enrichissement auto                   |
 | Phase 4 - Quality & Trust      | ✅ **Complète**  | Vérification sources, bias detection                 |
-| Phase 5 - Edition & Versioning | 🔶 **Partielle** | Édition par zones, historique                        |
+| Phase 5 - Edition & Versioning | ✅ **Complète**  | Édition par zones, historique                        |
 | Phase 6 - Production           | ❌ **À faire**   | Auth, monitoring, optimisation                       |
 
 ---
@@ -113,7 +113,7 @@
 - [x] **Cross-reference** : Vérifier claims dans 2+ sources
 - [x] **Source reliability tracking** : Score par source dans DB
 - [x] **Panel sources** : Afficher toutes les sources utilisées avec liens
-- [ ] **Domain authority score** : Age, trafic, HTTPS, structure
+- [x] **Domain authority score** : Age, trafic, HTTPS, structure
 - [ ] **Citations systématiques** : Chaque fait cité avec source
 
 ### Détection de biais
@@ -135,7 +135,7 @@
 
 ---
 
-## Phase 5 - Edition & Versioning 🔶 EN COURS
+## Phase 5 - Edition & Versioning ✅ COMPLÈTE
 
 **Objectif** : Modification granulaire et historique des pages
 
@@ -146,14 +146,14 @@
 - [x] **Tool edit_section** : Remplacer contenu d'une section
 - [x] **Tool insert_after** : Insérer après une section
 - [x] **Tool append_to_section** : Ajouter à la fin d'une section
-- [ ] **Streaming modifications** : Highlight section en cours d'édition
+- [x] **Streaming modifications** : Highlight section en cours d'édition
 
 ### Versioning
 
-- [ ] **UI historique** : Liste des versions (schéma `PageVersion` existe)
-- [ ] **Diff view** : Comparaison avant/après
-- [ ] **Rollback** : Revenir à une version antérieure
-- [ ] **Changelog auto** : Résumé des modifications
+- [x] **UI historique** : Liste des versions (schéma `PageVersion` existe)
+- [x] **Diff view** : Comparaison avant/après
+- [x] **Rollback** : Revenir à une version antérieure
+- [x] **Changelog auto** : Résumé des modifications
 
 ### Éditeur (optionnel)
 
@@ -206,16 +206,14 @@
 
 ## 🎯 Prochaines Étapes Recommandées
 
-| Priorité | Tâche                                       | Effort estimé |
-| -------- | ------------------------------------------- | ------------- |
-| P1       | Streaming modifications (highlight édition) | ~2h           |
-| P1       | UI historique versions                      | ~2h           |
-| P2       | Diff view pour versions                     | ~2h           |
-| P2       | Auth (Clerk recommandé)                     | ~3h           |
-| P2       | Domain authority score                      | ~2h           |
-| P3       | Citations systématiques                     | ~3h           |
-| P3       | Tests E2E flow principal                    | ~3h           |
-| P3       | Error tracking (Sentry)                     | ~1h           |
+| Priorité | Tâche                    | Effort estimé |
+| -------- | ------------------------ | ------------- |
+| P1       | Auth (Clerk recommandé)  | ~3h           |
+| P2       | Citations systématiques  | ~3h           |
+| P2       | Tests E2E flow principal | ~3h           |
+| P2       | Error tracking (Sentry)  | ~1h           |
+| P3       | Analytics (Plausible)    | ~1h           |
+| P3       | CDN images               | ~1h           |
 
 ---
 
@@ -226,10 +224,10 @@ Phase 1 ████████████████████ 100%
 Phase 2 ████████████████████ 100%
 Phase 3 ████████████████████ 100%
 Phase 4 ████████████████████ 100%
-Phase 5 ██████████░░░░░░░░░░  50%
+Phase 5 ████████████████████ 100%
 Phase 6 ██░░░░░░░░░░░░░░░░░░  10%
 
-Total   ██████████████████░░  77%
+Total   ███████████████████░  87%
 ```
 
 ---
@@ -250,4 +248,4 @@ Total   ██████████████████░░  77%
 
 ---
 
-_Dernière mise à jour : 9 Février 2026_
+_Dernière mise à jour : 13 Février 2026_

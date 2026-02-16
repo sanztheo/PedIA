@@ -1,9 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { Eye, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { GraphData, GraphNode } from '@/types';
 
@@ -78,12 +76,6 @@ export function PageListView({ data, highlightedId }: PageListViewProps) {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground ml-4">
-                    {page.metadata?.viewCount !== undefined && (
-                      <span className="flex items-center gap-1 text-xs">
-                        <Eye className="size-3" />
-                        {page.metadata.viewCount}
-                      </span>
-                    )}
                     <ChevronRight className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </Link>
